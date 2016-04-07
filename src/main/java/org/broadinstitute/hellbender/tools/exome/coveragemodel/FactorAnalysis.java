@@ -74,6 +74,15 @@ public class FactorAnalysis {
 
     }
 
+    /**
+     * One EM iteration including E step and M step
+     * Note: this uses the approximations in which the variance of each sample is replaced by an average of sample variances
+     * This is mainly for ease of implementation and we may use the exact M step later.
+     */
+    private void performOneExpectationMaximizationIteration() {
+
+    }
+
     /*
      * Latent variables z are O(1) so each entry in the vector Wz is the inner product of K entries of W with K
      * entries of z.  If K is also O(1) this is a sum of K random-ish quantities that are all O(1), which has typical size
@@ -96,8 +105,7 @@ public class FactorAnalysis {
         ParamUtils.isPositive(size, "Must have size > 0");
         return IntStream.range(0, D).mapToDouble(n -> rng.nextGaussian()).toArray();
     }
-
-
+    
     public expectationStepResult expectationStepForOneSample(final RealVector observed, final RealVector variance) {
         if (observed.getDimension() != D) {
             throw new IllegalArgumentException(String.format("Input observed values must have length %d.", D));
@@ -107,13 +115,17 @@ public class FactorAnalysis {
         final DiagonalMatrix totalVariance = Psi.add(sampleVariance);
         final DiagonalMatrix totalPrecision = totalVariance.inverse();
 
-        //the following code implements G_i = (I + W^T (Psi+S_i)^(-1) W)^(-1)
+        // G_i = (I + W^T (Psi+S_i)^(-1) W)^(-1)
         //this matrix is KxK so all operations are cheap.
         final RealMatrix G = new LUDecomposition(I.add(Wtranspose.multiply(totalPrecision).multiply(W))).getSolver().getInverse();
 
-        //difference between observed values and global mean m
+        // difference between observed values and global mean m
         final RealVector residual = observed.subtract(m);
+
+        // E[z] = G W^T (Psi+S_i)^(-1) (x - m)
         final RealVector firstMoment = G.multiply(Wtranspose).multiply(totalPrecision).operate(residual);
+
+        // E[z z^T] = G + E[z]E[z]^T
         final RealMatrix secondMoment = G.add(firstMoment.outerProduct(firstMoment));
 
         return new expectationStepResult(firstMoment, secondMoment);

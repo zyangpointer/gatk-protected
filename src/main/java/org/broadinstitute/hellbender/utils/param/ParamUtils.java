@@ -4,6 +4,7 @@ import com.google.common.primitives.Doubles;
 import org.apache.commons.lang.math.DoubleRange;
 import org.apache.commons.lang.math.IntRange;
 import org.apache.commons.math3.exception.NotFiniteNumberException;
+import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.util.MathUtils;
 import org.broadinstitute.hellbender.exceptions.GATKException;
 import org.broadinstitute.hellbender.utils.Utils;
@@ -330,5 +331,13 @@ public class ParamUtils {
                     prefix, value, validRange.getMinimumInteger(), validRange.getMaximumInteger()));
         }
         return value;
+    }
+
+    public static void checkMatrixDimensions(final RealMatrix matrix, final int numRows, final int numCols) {
+        if (matrix.getRowDimension() != numRows) {
+            throw new IllegalArgumentException(String.format("Matrix is supposed to have % rows, but has %.", numRows, matrix.getRowDimension()));
+        } else if (matrix.getColumnDimension() != numCols) {
+            throw new IllegalArgumentException(String.format("Matrix is supposed to have % columns, but has %.", numCols, matrix.getColumnDimension()));
+        }
     }
 }

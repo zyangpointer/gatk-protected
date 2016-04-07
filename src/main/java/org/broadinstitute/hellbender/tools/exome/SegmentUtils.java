@@ -421,15 +421,7 @@ public final class SegmentUtils {
                                                                 final Function<DataLine, T> dataLineToSegmentFunction) {
         Utils.nonNull(segmentsFile);
         Utils.regularReadableUserFile(segmentsFile);
-        try (final TableReader<T> reader = TableUtils.reader(segmentsFile,
-                (columns, formatExceptionFactory) -> {
-                    if (!columns.containsAll(mandatoryColumns)) {
-                        final Set<String> missingColumns = Sets.difference(new HashSet<>(Arrays.asList(mandatoryColumns)), new HashSet<>(columns.names()));
-                        throw formatExceptionFactory.apply("Bad header in file.  Not all columns are present.  Missing: " + StringUtils.join(missingColumns, ", "));
-                    }
-                    //return the lambda to translate dataLines into called segments
-                    return dataLineToSegmentFunction;
-                })) {
+        try (final TableReader<T> reader = TableUtils.reader(segmentsFile, Arrays.asList(mandatoryColumns), dataLineToSegmentFunction)) {
             return reader.stream().collect(Collectors.toList());
         } catch (final IOException | UncheckedIOException e) {
             throw new UserException.CouldNotReadInputFile(segmentsFile, e);

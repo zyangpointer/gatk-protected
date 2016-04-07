@@ -9,6 +9,8 @@ import org.broadinstitute.hellbender.utils.tsv.TableWriter;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -128,16 +130,8 @@ public final class CoverageDropoutResult {
     }
 
     public static List<CoverageDropoutResult> readCoverageDropoutResultsFromTsv(final File inFile) throws IOException {
-        final TableColumnCollection tcc = new TableColumnCollection(outputColumnNames);
-        try (final TableReader<CoverageDropoutResult> reader = TableUtils.reader(inFile,
-                (columns, formatExceptionFactory) -> {
-
-                    if (!columns.containsAll(outputColumnNames)) {
-                        throw formatExceptionFactory.apply("Missing headers.");
-                    }
-
-                    // return the lambda to translate dataLines into coverage dropout result.
-                    return (dataLine) -> new CoverageDropoutResult(dataLine.getBoolean(COVERAGE_DROPOUT_COLUMN),
+        try (final TableReader<CoverageDropoutResult> reader = TableUtils.reader(inFile, Arrays.asList(outputColumnNames),
+        (dataLine) -> new CoverageDropoutResult(dataLine.getBoolean(COVERAGE_DROPOUT_COLUMN),
                             dataLine.getDouble(GOOD_SEGMENT_THRESHOLD_COLUMN),
                             dataLine.getDouble(MININUM_WEIGHT_COLUMN),
                             dataLine.getDouble(MININUM_TARGET_PROPORTION_COLUMN),
@@ -145,8 +139,8 @@ public final class CoverageDropoutResult {
                             dataLine.getLong(NUM_SEGMENTS_COLUMN),
                             dataLine.getLong(NUM_SEGMENTS_AFTER_FILTERING_COLUMN),
                             dataLine.getDouble(THRESHOLD_DISTANCE_PER_SEGMENTS_COLUMN),
-                            dataLine.get(COMMENT_COLUMN));
-                })) {
+                            dataLine.get(COMMENT_COLUMN))
+                )) {
             return reader.stream().collect(Collectors.toList());
         } catch (final UncheckedIOException e) {
             throw e.getCause();
