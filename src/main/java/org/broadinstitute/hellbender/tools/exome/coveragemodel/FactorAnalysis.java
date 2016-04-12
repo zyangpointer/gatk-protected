@@ -3,7 +3,9 @@ package org.broadinstitute.hellbender.tools.exome.coveragemodel;
 import org.apache.commons.math3.linear.*;
 import org.broadinstitute.hellbender.utils.param.ParamUtils;
 
+import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -105,30 +107,61 @@ public class FactorAnalysis {
         ParamUtils.isPositive(size, "Must have size > 0");
         return IntStream.range(0, D).mapToDouble(n -> rng.nextGaussian()).toArray();
     }
-    
-    public expectationStepResult expectationStepForOneSample(final RealVector observed, final RealVector variance) {
+
+    private List<ExpectationStepResult> exactExpectationStepOfAllSamples(final RealMatrix X, final RealMatrix S) {
+        return IntStream.range(0, X.getRowDimension())
+                .mapToObj(s -> expectationStepForOneSample(X.getRowVector(s), S.getRowVector(s)))
+                .collect(Collectors.toList());
+    }
+
+    private List<ExpectationStepResult> approximateExpectationStepOfAllSamples(final RealMatrix X, final RealMatrix S) {
+        final int numSamples = S.getRowDimension();
+        final RealVector averageSampleVariances = IntStream.range(0, numSamples)
+                .mapToObj(s -> S.getRowVector(s))
+                .reduce(new ArrayRealVector(S.getColumnDimension()), (a,b) -> a.add(b))
+                .mapDivide(numSamples);
+        final DiagonalMatrix totalVariance = Psi.add(new DiagonalMatrix(averageSampleVariances.toArray()));
+    }
+
+    public ExpectationStepResult expectationStepForOneSample(final RealVector observed, final RealVector variance) {
         if (observed.getDimension() != D) {
             throw new IllegalArgumentException(String.format("Input observed values must have length %d.", D));
         }
 
         final DiagonalMatrix sampleVariance = new DiagonalMatrix(variance.toArray());
         final DiagonalMatrix totalVariance = Psi.add(sampleVariance);
-        final DiagonalMatrix totalPrecision = totalVariance.inverse();
+        final DiagonalMatrix precision = totalVariance.inverse();
 
         // G_i = (I + W^T (Psi+S_i)^(-1) W)^(-1)
         //this matrix is KxK so all operations are cheap.
-        final RealMatrix G = new LUDecomposition(I.add(Wtranspose.multiply(totalPrecision).multiply(W))).getSolver().getInverse();
+        final RealMatrix G = new LUDecomposition(I.add(Wtranspose.multiply(precision).multiply(W))).getSolver().getInverse();
+        return singleSampleEStepGivenPrecisionAndG(observed, precision, G);
+    }
 
-        // difference between observed values and global mean m
-        final RealVector residual = observed.subtract(m);
+
+    /**
+     * Calculate the E step for a single sample.  That is, calculate the 1st and 2nd moments of the Gaussian posterior
+     * of the associated K-dimensional latent variable z
+     * @param data D-dimensional data for a sample
+     * @param precision precision matrix to be used in this calculation.  In exact mode this is
+     *                  (Psi + Sigma_s)^-1, where Sigma_s is a diagonal matrix with jth entry equal to the
+     *                  variance of the observed value data_j.  In approximate mode we use the average of Sigma_s over
+     *                  all samples in order to have a shared precision and G matrix.
+     * @param G         precomputed value of G = (I + W^T precision W)^(-1)
+     * @return
+     */
+    private ExpectationStepResult singleSampleEStepGivenPrecisionAndG(final RealVector data,
+                                                                      final DiagonalMatrix precision, final RealMatrix G) {
+        // difference between data values and global mean m
+        final RealVector residual = data.subtract(m);
 
         // E[z] = G W^T (Psi+S_i)^(-1) (x - m)
-        final RealVector firstMoment = G.multiply(Wtranspose).multiply(totalPrecision).operate(residual);
+        final RealVector firstMoment = G.multiply(Wtranspose).multiply(precision).operate(residual);
 
         // E[z z^T] = G + E[z]E[z]^T
         final RealMatrix secondMoment = G.add(firstMoment.outerProduct(firstMoment));
 
-        return new expectationStepResult(firstMoment, secondMoment);
+        return new ExpectationStepResult(firstMoment, secondMoment);
     }
 
     /**
@@ -137,11 +170,11 @@ public class FactorAnalysis {
      *
      * This class encapsulates these moments
      */
-    private static final class expectationStepResult {
+    private static final class ExpectationStepResult {
         public RealVector firstMoment;
         public RealMatrix secondMoment;
 
-        public expectationStepResult(RealVector firstMoment, RealMatrix secondMoment) {
+        public ExpectationStepResult(RealVector firstMoment, RealMatrix secondMoment) {
             this.firstMoment = firstMoment;
             this.secondMoment = secondMoment;
         }

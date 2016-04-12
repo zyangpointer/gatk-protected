@@ -10,6 +10,21 @@
 %Put an averaged random variable between brackets
 \newcommand{\ave}[1]{\left\langle #1 \right\rangle}
 
+\newcommand{\vzero}{{\bf 0}}
+\newcommand{\vI}{{\bf I}}
+\newcommand{\vb}{{\bf b}}
+\newcommand{\vc}{{\bf c}}
+\newcommand{\vz}{{\bf z}}
+\newcommand{\vn}{{\bf n}}
+\newcommand{\vm}{{\bf m}}
+\newcommand{\vG}{{\bf G}}
+\newcommand{\vM}{{\bf M}}
+\newcommand{\vW}{{\bf W}}
+\newcommand{\vX}{{\bf X}}
+\newcommand{\vPsi}{{\bf \Psi}}
+\newcommand{\vSigma}{{\bf \Sigma}}
+\newcommand{\vlambda}{{\bf \lambda}}
+
 \newtheorem{lemma}{Lemma}
 \newtheorem{corollary}{Corollary}
 
@@ -180,7 +195,7 @@ As with the other parameters, we put a flat prior on ${\rm \pi}$.  Putting all t
 \left[ \frac{(1-\pi) f_j^{a_j} (1 - f_j)^{r_j} \lambda_j^{r_j}}{ \left( f_j + (1-f_j) \lambda_j \right)^{n_j}} \right]^{z_{ja}}   
 \left[ \frac{(1-\pi) (1-f_j)^{a_j} f_j^{r_j} \lambda_j^{r_j}}{ \left( 1 - f_j + f_j \lambda_j \right)^{n_j}} \right]^{z_{jr}}   
 \left[ \frac{2 \pi a_j! r_j!}{(n_j + 1)!} \right]^{z_{jo}}.
-\label{likelihood}
+\label{ACNVlikelihood}
 \end{equation}
 %
 The dependence on $\lambda$ for alt minor sites is
@@ -482,6 +497,149 @@ p(f, \pi) \propto \prod_j
 \end{equation}
 %
 where $f$ and $\pi$ may once again be sampled via adaptive Metropolis.
+
+\subsection{Generative Model for Read Counts} \label{coverage-model}
+In this section we address several goals:
+
+\begin{enumerate}
+
+\item Connect copy ratio (or copy number) and raw read counts in a single probabilistic model without transforming the data.
+
+\item Take into account the Poisson nature of coverage depth, thereby giving less weight to low-coverage targets and separating the inherent variance due to Poisson statistics from experimental noise.  We want to use the panel of normals to subtract only the latter.
+
+\item Choose the number of principal components to use in an automatic and principled manner.
+
+\item Use an algorithm that does not waste time calculating all principal components when we only want the few most significant ones.
+
+\item Correct for CNV events that occur in the panel of normals.
+
+\end{enumerate}
+
+Suppose we have vectors of read counts over a set of $T$ targets for $S$ samples, $\vn_s, \, s = 1 \ldots S$ where $n_{st}$ is the coverage of sample $s$ at target $t$.  We imagine that laboratory conditions for a particular sample yielding an underlying bias vector $\vb_s$, where $e^{b_{st}}$ is the propensity of target $t$ to be captured, sequenced, and mapped in the preparation of sample $s$.  Suppose also that sample $s$ has an average depth $d_s$ and a vector of copy numbers $\vc_s$, where the latent variable $c_{st}$ is the copy number of sample $s$ at target $t$.  Our model for coverage is:
+%
+\begin{equation}
+n_{st} \sim {\rm Poisson}(d_s c_{st} e^{b_{st}})
+\end{equation}
+%
+We can achieve many of the goals listed above by performing probabilistic PCA not on $\vn$ directly but rather on $\vb$.  This is one reason why we choose a Poisson parameter proportional to $e^b$ and not simply $b$ -- probabilistic PCA involves a normal distribution on $\vb_s$, whereas the Poisson parameter must be positive.  Furthermore, since PCA is a linear model with additive effects of different latent features, using $e^b$ represents multiplicative effects, which is more plausible.  Our model is
+%
+\begin{align}
+\vz_s \sim& {\rm N}(\vzero, \vI) \\
+\vb_s \sim& {\rm N}(\vW \vz_s + \vm, \vPsi),
+\end{align}
+%
+where $\vz_s \in \mathbb{R}^D$ is a low-dimensional latent vector of laboratory conditions, $\vW \in \mathbb{R}^{T \times D}$ is a linear map from latent space to target space, $\vm \in \mathbb{R}^T$ is the vector of mean biases, and $\vPsi \in \mathbb{R}^{T \times T}$ is a diagonal matrix of residual variance not explained by the latent features.  We approximate the Poisson as a Gaussian centered at its mode (as a function of $b_{st}$):
+%
+\begin{align}
+\prod_t {\rm Poisson}(n_{st} | d_s c_{st} \lambda_{st}) \approx {\rm N}(\vb_s | \vm_s, \vSigma_s), \, m_{st} = \ln(n_{st}/(c_{st} d_s)), \, \vSigma_{st} = 1/n_{st}
+\end{align}
+%
+to obtain the joint likelihood
+%
+\begin{equation}
+P(\vn, \vb, \vz | \vc, \vW, \vm, \vPsi, d ) = \prod_s {\rm N}(\vz_s | \vzero, \vI) {\rm N}(\vb_s | \vW \vz_s + \vm, \vPsi) {\rm N}(\vb_s | \vm_s, \vSigma_s)
+\end{equation}
+%
+
+We can integrate out $\vb$ via the identity $\int {\rm N}(x | \mu_1, \sigma_1^2) {\rm N}(x | \mu_2, \sigma_2^2) \, dx = {\rm N}(\mu_1 | \mu_2, \sigma_1^2 + \sigma_2^2)$ to obtain
+%
+\begin{equation}
+P(\vn, \vz | \vc, \vW, \vm, \vPsi, d, \vn) = \prod_s {\rm N}(\vz_s | \vzero, \vI) {\rm N}(\vm_s | \vW \vz_s + \vm, \vPsi + \vSigma_s)
+\end{equation}
+%
+
+For fixed $\vc$ we may obtain maximum likelihood estimates of $\vW$, $\vSigma$, and $\vm$ by an iterative EM approach in which we alternate between computing the Gaussian posteriors of each $\vz_s$ (E step) and maximizing the log-likelihood with respect to $\vW$, $\vSigma$, and $\vm$ (M step).  This is similar to the factor analysis model discussed in Chapter 12 of Bishop.  We note that a second level of iteration, on $\vc$, allows us to correct for CNV events that may be present in the panel of normals: alternate between 1) learning $\vW$, $\vSigma$, and $\vm$ and 2) calling $\vc_s$ for each sample in the panel.
+
+The E step follows from substituting $\vPsi \rightarrow \vPsi_s \equiv  \vPsi + \vSigma_s$ in Bishop's Equations 12.66-67 to get
+%
+\begin{align}
+\vG_s =& \left( \vI + \vW^T \vPsi_s^{-1} \vW \right)^{-1} \\
+E \left[ \vz_s \right] =& \vG_s \vW^T \vPsi_s^{-1} (\vm_s - \vm) \\
+E \left[ \vz_s \vz_s^T \right] =& \vG_s + E[\vz_s] E[\vz_s]^T
+\end{align}
+%
+
+For the M steps, we must maximize with respect to 
+%
+\begin{align}
+E \left[ \sum_s \ln {\rm N}(\vm_s | \vW \vz_s + \vm, \vPsi + \vSigma_s) \right] =& -\frac{1}{2} \sum_{st} \left[ \ln \Psi_{st}+ E[(\vW \vz_s + \vm - \vm_s)_t^2] (\Psi_{st})^{-1} \right] 
+\end{align}
+which reduces to
+\begin{equation}
+ -\frac{1}{2} \sum_{st} \left[ \ln (\vPsi_t + \Sigma_{st}) + \left( \vW_t  E[\vz_s \vz_s^T] \vW_t^T + (\vm_t - \vm_{st})^2 +2 (\vm_t - \vm_{st}) \vW_t E[\vz_s] \right)\Psi_{st}^{-1} \right]
+\end{equation}
+%
+
+
+The M step for $\vm$ is routine and comes out to:
+\begin{align}
+\vm = \left( \sum_s \vPsi_{s}^{-1} \right)^{-1} \sum_s \left[ \vPsi_{s}^{-1}  (\vW  E[\vz_{s}] - \vm_{s} ) \right] 
+\end{align}
+
+Although this is simple and not too expensive to compute ($O(TDS)$ operations), we now introduce a reasonable approximation that we may use as an initial reference implementation or as an optional speed-up.  The approximation is $\vSigma_s \approx \bar{\vSigma} \equiv \frac{1}{S} \sum_s \vSigma_s$, in which case $\vPsi_s = \bar{\vPsi}_s = \vPsi + \bar{\vSigma}$ for each $s$ and cancellations lead to
+\begin{align}
+\vm = \frac{1}{S} \sum_s  (\vW  E[\vz_{s}] - \vm_{s} )  \, {\rm (simplified)}
+\end{align}
+
+The M step for $\vPsi_t$ is
+\begin{align}
+\sum_s \left[ \frac{1}{\vPsi_t + \Sigma_{st}} - \frac{\beta_{st}}{(\vPsi_t + \Sigma_{st})^2} \right] = 0, \, \beta_{st} = \vW_t  E[\vz_s \vz_s^T] \vW_t^T + (\vm_t - \vm_{st})^2 +2 (\vm_t - \vm_{st}) \vW_t E[\vz_s]
+\end{align}
+which is straightforward to solve numerically.  Alternatively, the aforementioned approximation gives
+%
+\begin{equation}
+\Psi_{tt} = \frac{1}{S} \sum_s \beta_{st} - \bar{\Sigma}_{tt}, \, {\rm (simplified)}
+\end{equation}
+%
+
+In the M step equation for $\vW$ we incorporate an automatic relevance determination (ARD) prior:
+%
+\begin{align}
+P(\vW) =& \prod_k \left( \frac{\alpha_k}{2 \pi} \right)^{T/2} \exp \left( -\frac{1}{2} \alpha_k \sum_t W_{tk}^2  \right).
+\end{align}
+%
+If $\alpha_k \rightarrow \infty$ the $k$th column / feature of $\vW$ is effectively turned off.  Thus we can initially choose a liberal estimate of $K$ and the model will automatically become more parsimonious.
+The maximum a posterior result for the row $\vW_t$ is routine and gives
+%
+\begin{equation}
+\vW_t^T = \left( {\rm Diag}(\alpha_1, \alpha_2 \ldots \alpha_K) + \sum_s \Psi_{st}^{-1}  E[\vz_{s} \vz_{s}^T]  \right)^{-1} \sum_s \Psi_{st}^{-1} ( \vm_{st} - \vm_t) E[\vz_{s}]
+\label{M_step_W}
+\end{equation}
+%
+In the approximation $\vPsi_s \rightarrow \bar{\vPsi}$ this becomes
+%
+\begin{equation}
+\vW_t^T = \left( \bar{\Psi}_{tt} {\rm Diag}(\alpha_1, \alpha_2 \ldots \alpha_K) + \sum_s  E[\vz_{s} \vz_{s}^T]  \right)^{-1} \sum_s  ( \vm_{st} - \vm_t) E[\vz_{s}]
+\label{M_step_W}
+\end{equation}
+%
+The other M steps and the E step are not affected by the ARD prior.
+
+The ARD coefficients $\alpha$ are determined via the evidence approximation in which their marginal likelihood is maximized.  That is, we set
+\begin{align}
+\frac{\partial}{\partial \alpha_k} \int P(\vW | \alpha) {\rm likelihood}(\vW) \, d \vW =& 0 \\
+\frac{1}{2} \int \left( \frac{T}{\alpha_k} - \sum_t W_{tk}^2 \right) {\rm posterior}(\vW) \, d \vW =& 0 \\
+\end{align}
+If we posterior is tightly peaked about the MLE estimate $\vW$, this has the solution
+\begin{equation}
+\alpha_k = \frac{T}{\sum_t W_{tk}^2}
+\end{equation}
+
+We now consider the computational expense of these steps.  The slowest part of the E step is computing $\vG_s$, which requires $O(D^2 T)$ arithmetic operations per sample, $O(D^2 T S)$ in total.  If we use the approximation $\vPsi_s \rightarrow \bar{\vPsi}$ there is only a single $\vG$ and the cost is again $O(D^2 T)$.  Each calculation of $E[\vz_s]$ costs $O(D T)$ operations for a total of $O(D T S)$.  For any reasonable panel of normals $S > D$, so the E step cost is $O(D^2 T S)$ or $O(D T S)$ depending on the approximation.  The cost of the M step for $\vm$ is $O(D T S)$, regardless.  Calculating $\beta_{st}$ costs $O(D^2)$ operations for a total cost of $O(D^2 T S)$ over all $s$ and $t$.  Then for each $\Psi_t$ the M step optimization objective costs $O(S)$ to compute.  Assuming an $O(1)$ cost of numerical optimization, solving for all $\Psi_t$ numerically costs $O(T S)$, which is subleading compared to the cost of calculating all $\beta_{st}$.  In the approximate version we only need the \textit{sum} $\sum_s \beta_{st}$ , which is cheap to compute because, for example, $\sum_s \vW_t  E[\vz_s \vz_s^T] \vW_t^T = \vW_t  \left( \sum_s E[\vz_s \vz_s^T] \right) \vW_t^T$.  Calculating this for all $t$ while caching the value of $ \sum_s E[\vz_s \vz_s^T] $ costs $O(D^2 T)$.  The M step for $\vW$ costs $O(D^2 S T)$ or $O(D S T)$ depending on the approximation.    The dropped prefactors for all these are small -- 1 or 2, usually -- so taking everything together the costs of one full EM iteration is roughly $10 D^2 T S$ without the approximation and $10 D T S$ with it.  Assuming $T = 2 \times 10^5$, $D = 10$, $S = 500$ these come out to $10^{10}$ and $10^{11}$ flops, respectively.  On a single 1 GHz core ($10^9$ flops per second) this comes out to roughly 10 or 100 seconds.  Very conservatively, the EM algorithm will converge well within iterations, so the worst-case scenario is about two hours for the unapproximated version.  Given that a panel of normals only has to be learned once, no approximations will be needed in production.  However, we may find the approximate version very useful for development.
+
+
+We can apply the parameters learned from the panel of normals to single-sample calling, which requires the likelihood as a function of the copy numbers $\vc$.  Applying the same E step as above, the likelihood is
+\begin{equation}
+P({\rm data} | \vc) \propto \prod_t \exp \left[ -\frac{1}{2} \left(  (\vm_t - \vm_{st})^2 +2 (\vm_t - \vm_{st}) \vW_{t} E[\vz_{s}] \right)\Psi_{st}^{-1} \right],
+\end{equation}
+which depends on $\vc$ via $m_{st} = \ln \left( n_{st} / (c_{st} d_s) \right)$.  Note that this is factorized into independent likelihood terms for each target and is thus suitable for the emission model of an HMM.  This likelihood is not Gaussian in $\vc$, but it does not need to be for the Viterbi and forward-backward algorithms.
+
+We can easily integrate sample-specific GC bias into this model.  Let $f_s({\rm GC})$ be the GC bias of GC content ${\rm GC}$ for sample $s$.  Then this enters into the model as an additional multiplier to the Poisson parameter.  That is, we replace $d_s c_{st} \rightarrow d_s c_{st} f_s({\rm GC}_t)$, which affects the model learning and inference only via the definition of $m_{st}$.  We can iteratively re-estimate the GC bias function $f_s$ by regressing the bias not explained by the latent factors.  That is, for each target the Poisson parameter is, ignoring GC effects,
+\begin{equation}
+c_{st} d_s \exp \left( \vW_t E[\vz_s] + m_t \right)
+\end{equation}
+and thus the ratio $n_{st} / \left[ c_{st} d_s \exp \left( \vW_t E[\vz_s] + m_t \right) \right]$ (with error bars of size $1/\sqrt{n}$ if we want to do a weighted regression) is an estimate of $f_s({\rm GC}_t)$ that we can feed into our favorite regression model.  This is more sophisticated than the standard approach of simply regressing $n$ versus ${\rm GC}$ in that it seeks to explain with GC only the bias that cannot be explained by linear latent features.
+
 %%%APPENDICES
 \appendix
 
