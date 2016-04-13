@@ -1,11 +1,14 @@
 package org.broadinstitute.hellbender.utils;
 
+import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.RealMatrix;
+import org.apache.commons.math3.linear.RealVector;
 import org.apache.commons.math3.stat.descriptive.moment.Variance;
 import org.apache.commons.math3.stat.descriptive.rank.Percentile;
 
 import java.util.Collection;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Extra MathUtils that should be moved to gatk-public
@@ -135,5 +138,16 @@ public class GATKProtectedMathUtils {
     public static double stdDev(final double ... values) {
         Utils.nonNull(values);
         return Math.sqrt(new Variance().evaluate(values));
+    }
+
+    public static Stream<RealVector> rowStream(final RealMatrix matrix) {
+        return IntStream.range(0, matrix.getRowDimension())
+                .mapToObj(r -> matrix.getRowVector(r));
+    }
+
+    public static RealVector averageOfRows(final RealMatrix matrix) {
+        final int numRows = matrix.getRowDimension();
+        final RealVector zeroVector = new ArrayRealVector(matrix.getColumnDimension());
+        return rowStream(matrix).reduce(zeroVector, (a, b) -> a.add(b)).mapDivide(numRows);
     }
 }

@@ -573,12 +573,12 @@ which reduces to
 
 The M step for $\vm$ is routine and comes out to:
 \begin{align}
-\vm = \left( \sum_s \vPsi_{s}^{-1} \right)^{-1} \sum_s \left[ \vPsi_{s}^{-1}  (\vW  E[\vz_{s}] - \vm_{s} ) \right] 
+\vm = \left( \sum_s \vPsi_{s}^{-1} \right)^{-1} \sum_s \left[ \vPsi_{s}^{-1}  (\vm_{s} - (\vW  E[\vz_{s}] ) \right] 
 \end{align}
 
 Although this is simple and not too expensive to compute ($O(TDS)$ operations), we now introduce a reasonable approximation that we may use as an initial reference implementation or as an optional speed-up.  The approximation is $\vSigma_s \approx \bar{\vSigma} \equiv \frac{1}{S} \sum_s \vSigma_s$, in which case $\vPsi_s = \bar{\vPsi}_s = \vPsi + \bar{\vSigma}$ for each $s$ and cancellations lead to
 \begin{align}
-\vm = \frac{1}{S} \sum_s  (\vW  E[\vz_{s}] - \vm_{s} )  \, {\rm (simplified)}
+\vm = \frac{1}{S} \sum_s  (\vm_{s} - \vW  E[\vz_{s}]  )  \, {\rm (simplified)}
 \end{align}
 
 The M step for $\vPsi_t$ is
