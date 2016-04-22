@@ -125,28 +125,32 @@ public final class ACNVCopyRatioModeller {
         //  log[product_{non-outlier t in s} exp(-(coverage_t - mean_s)^2 / (2 * variance))] + constant
         final Sampler<SegmentMeans, CopyRatioState, CopyRatioDataCollection> segmentMeansSampler =
                 (rng, state, dataCollection) -> {
-            final List<Double> means = new ArrayList<>(dataCollection.numSegments);
-            for (int i = 0; i < dataCollection.numSegments; i++) {
-                //segment, targetStartInSegment, and numTargetsInSegment need to be effectively final in lambda
-                final int segment = i;
-                final int targetStartInSegment = dataCollection.getStartTargetInSegment(segment);
-                final int numTargetsInSegment = dataCollection.getNumTargetsInSegment(segment);
-                if (numTargetsInSegment == 0) {
-                    means.add(Double.NaN);
-                } else {
-                    final Function<Double, Double> logConditionalPDF = newMean -> IntStream.range(0, numTargetsInSegment)
-                            .filter(target -> !state.getOutlierIndicator(targetStartInSegment + target))
-                            .mapToDouble(target -> dataCollection.getCoveragesInSegment(segment).get(target))
-                            .map(coverage -> -normalTerm(coverage, newMean, state.variance()))
-                            .sum();
+                    final List<Double> means = new ArrayList<>(dataCollection.numSegments);
+                    for (int segment = 0; segment < dataCollection.numSegments; segment++) {
+                        //targetStartInSegment and numTargetsInSegment need to be effectively final in lambda
+                        final int targetStartInSegment = dataCollection.getStartTargetInSegment(segment);
+                        final int numTargetsInSegment = dataCollection.getNumTargetsInSegment(segment);
+                        final List<Double> coveragesInSegment = dataCollection.getCoveragesInSegment(segment);
+                        if (numTargetsInSegment == 0) {
+                            means.add(Double.NaN);
+                        } else {
+                            final Function<Double, Double> logConditionalPDF = newMean -> IntStream.range(0, numTargetsInSegment)
+                                    .filter(target -> !state.getOutlierIndicator(targetStartInSegment + target))
+                                    .mapToDouble(coveragesInSegment::get)
+                                    .map(coverage -> -normalTerm(coverage, newMean, state.variance()))
+                                    .sum();
 
-                    final SliceSampler sampler =
-                            new SliceSampler(rng, logConditionalPDF, state.getMeanInSegment(segment), meanSliceSamplingWidth);
-                    means.add(sampler.sample());
-                }
-            }
-            return new SegmentMeans(means);
-        };
+                            final double minimumCoverageInSegment = Collections.min(coveragesInSegment);
+                            final double maximumCoverageInSegment = Collections.max(coveragesInSegment);
+
+                            final SliceSampler sampler =
+                                    new SliceSampler(rng, logConditionalPDF, state.getMeanInSegment(segment),
+                                            minimumCoverageInSegment, maximumCoverageInSegment, meanSliceSamplingWidth);
+                            means.add(sampler.sample());
+                        }
+                    }
+                    return new SegmentMeans(means);
+                };
 
         //samples log conditional posteriors for the outlier-indicator parameters; for each target t, this is given by:
         //          z_t * [log outlier_prob + outlierUniformLogLikelihood]
