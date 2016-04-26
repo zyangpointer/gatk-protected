@@ -28,7 +28,8 @@ public final class AlleleFractionSamplers {
         public Double sample(final RandomGenerator rng, final AlleleFractionState state, final AlleleFractionData data) {
             final AllelicPanelOfNormals allelicPON = data.getPON();
             if (allelicPON.equals(AllelicPanelOfNormals.EMPTY_PON)) {
-                return sampler.sample(x -> AlleleFractionLikelihoods.logLikelihood(state.shallowCopyWithProposedMeanBias(x), data));
+                return sampler.sample(x -> AlleleFractionLikelihoods.logLikelihood(
+                        state.getParameters().copyWithNewMeanBias(x), state.minorFractions(), data));
             }
             return allelicPON.getMLEMeanBias(); // if PON is available, always return MLE mean bias as "sample"
         }
@@ -45,7 +46,8 @@ public final class AlleleFractionSamplers {
         public Double sample(final RandomGenerator rng, final AlleleFractionState state, final AlleleFractionData data) {
             final AllelicPanelOfNormals allelicPON = data.getPON();
             if (allelicPON.equals(AllelicPanelOfNormals.EMPTY_PON)) {
-                return sampler.sample(x -> AlleleFractionLikelihoods.logLikelihood(state.shallowCopyWithProposedBiasVariance(x), data));
+                return sampler.sample(x -> AlleleFractionLikelihoods.logLikelihood(
+                        state.getParameters().copyWithNewBiasVariance(x), state.minorFractions(), data));
             }
             return allelicPON.getMLEBiasVariance(); // if PON is available, always return MLE bias variance as "sample"
         }
@@ -60,7 +62,8 @@ public final class AlleleFractionSamplers {
         }
 
         public Double sample(final RandomGenerator rng, final AlleleFractionState state, final AlleleFractionData data) {
-            return sampler.sample(x -> AlleleFractionLikelihoods.logLikelihood(state.shallowCopyWithProposedOutlierProbability(x), data));
+            return sampler.sample(x -> AlleleFractionLikelihoods.logLikelihood(
+                    state.getParameters().copyWithNewOutlierProbability(x), state.minorFractions(), data));
         }
     }
 
@@ -80,7 +83,7 @@ public final class AlleleFractionSamplers {
             if (data.numHetsInSegment(segmentIndex) == 0) {
                 return Double.NaN;
             }
-            return sampler.sample(AlleleFractionLikelihoods.segmentLogLikelihoodConditionalOnMinorFraction(state, data, segmentIndex));
+            return sampler.sample(f -> AlleleFractionLikelihoods.segmentLogLikelihood(state.getParameters(), f, data.countsInSegment(segmentIndex), data.getPON()));
         }
     }
 

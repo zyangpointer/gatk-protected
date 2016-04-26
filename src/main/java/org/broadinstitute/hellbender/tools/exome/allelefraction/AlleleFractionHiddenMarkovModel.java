@@ -1,0 +1,134 @@
+package org.broadinstitute.hellbender.tools.exome.allelefraction;
+
+import htsjdk.samtools.util.Locatable;
+import org.broadinstitute.hellbender.tools.exome.AllelicCount;
+import org.broadinstitute.hellbender.utils.MathUtils;
+import org.broadinstitute.hellbender.utils.SimpleInterval;
+import org.broadinstitute.hellbender.utils.Utils;
+import org.broadinstitute.hellbender.utils.hmm.HiddenMarkovModel;
+import org.broadinstitute.hellbender.utils.param.ParamUtils;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+/**
+ * The Allele Fraction Hidden Markov Model is a generative model describing latent CNV states
+ * with different minor allele fractions and observed ref and alt allele counts at a set of
+ * het sites.
+ *
+ * Hidden states are essentially minor allele fractions f, but for convenience we represent them
+ * as integers 0, 1, . . . K - 1 and store minor allele fractions in a corresponding array.
+ *
+ * The model contains a memory length parameter representing the prior probability for the minor
+ * allele fraction state to be "forgotten" as a function of distance d between consecutive SNPs --
+ * the probability to remember a state is exp(-d/memoryLength).  If the state is forgotten, a new state
+ * is chosen with probabilities given by an array of weights.
+ *
+ * Thus our transition probabilities are P(i -> j) = exp(-d/D) delta_{ij} + (1 - exp(-d/D) weights[j]
+ * where delta is the Kronecker delta and D is the memory length.
+ *
+ * Emission likelihoods as a function of minor allele fraction are defined and described in
+ * {@link AlleleFractionLikelihoods}.  These likelihoods require this class to contain a set of
+ * {@link AllelicBiasParameters} and an {@link AllelicPanelOfNormals}.
+ *
+ * This model, along with the likelihoods model, is described thoroughly in docs/CNVs/CNV-methods.pdf
+ *
+ * @author David Benjamin &lt;davidben@broadinstitute.org&gt;
+ */
+final public class AlleleFractionHiddenMarkovModel implements HiddenMarkovModel<AllelicCount, SimpleInterval, Integer>{
+    private double memoryLength;
+    private final double[] minorAlleleFractions;
+    private final double[] weights;
+    private AllelicBiasParameters parameters;
+    private final AllelicPanelOfNormals allelicPON;
+
+    /**
+     * @param minorAlleleFractions array of minor allele fractions corresponding to the hidden states
+     * @param weights array of (real-space, not log) prior probabilities of each hidden state
+     *                when memory of the previous state is lost.  These may be unnormalized relative
+     *                probabilities, which is useful when using variational Bayes.
+     * @param memoryLength when consecutive SNPs are a distance d bases apart, the prior probability
+     *                     for memory of the CNV state to be kept is exp(-d/memoryLength)
+     * @param allelicPON allelic panel of normals containing prior knowledge of allelic biases at common SNPs
+     * @param parameters the global parameters of the allelic bias model: mean bias, bias variance, and
+     *                   outlier probability
+     */
+    public AlleleFractionHiddenMarkovModel(final double[] minorAlleleFractions, final double[] weights,
+                                           final double memoryLength, final AllelicPanelOfNormals allelicPON,
+                                           final AllelicBiasParameters parameters) {
+        Utils.nonNull(minorAlleleFractions);
+        Utils.nonNull(weights);
+        Arrays.stream(minorAlleleFractions).forEach(f -> ParamUtils.inRange(f, 0, 0.5, "minor fractions must be between 0 and 1/2."));
+        Arrays.stream(weights).forEach(w -> ParamUtils.isPositiveOrZero(w, "weights may not be negative."));
+
+        if (minorAlleleFractions.length != weights.length) {
+            throw new IllegalArgumentException("Must have one weight per minor allele fraction.");
+        } else if (minorAlleleFractions.length == 0) {
+            throw new IllegalArgumentException("Must provide at least one minor allele fraction state.");
+        }
+
+        this.minorAlleleFractions = Arrays.copyOf(minorAlleleFractions, minorAlleleFractions.length);
+        this.weights = MathUtils.normalizeFromRealSpace(weights);
+        this.memoryLength = ParamUtils.isPositive(memoryLength, "CNV memory length must be positive");
+        this.allelicPON = Utils.nonNull(allelicPON);
+        this.parameters = Utils.nonNull(parameters);
+    }
+
+    // The following methods implement the HiddenMarkovModel interface -------------------------------------------------
+    public List<Integer> hiddenStates() {
+        return IntStream.range(0, minorAlleleFractions.length).boxed().collect(Collectors.toList());
+    }
+
+    public double logPriorProbability(final Integer state, final SimpleInterval position) {
+        return Math.log(weights[state]);
+    }
+
+    public double logEmissionProbability(final AllelicCount data, final Integer state, final SimpleInterval position) {
+        return logEmissionProbability(data, minorAlleleFractions[state]);
+    }
+
+    public double logTransitionProbability(final Integer currentState, final SimpleInterval currentPosition,
+                                           final Integer nextState, final SimpleInterval nextPosition) {
+        return logTransitionProbability(currentState, nextState, calculateDistance(currentPosition, nextPosition));
+    }
+    // Done with implementation ----------------------------------------------------------------------------------------
+
+    /**
+     * Visible for {@link AlleleFractionSegmenter}
+     */
+    protected double logEmissionProbability(final AllelicCount data, final double minorFraction) {
+        return logEmissionProbability(data, minorFraction, parameters, allelicPON);
+    }
+
+    protected static double logEmissionProbability(final AllelicCount data, final double minorFraction,
+                                                   final AllelicBiasParameters parameters, final AllelicPanelOfNormals allelicPON) {
+        return AlleleFractionLikelihoods.collapsedHetLogLikelihood(parameters, minorFraction, data, allelicPON);
+    }
+
+    private double logTransitionProbability(final Integer currentState, final Integer nextState, final double distance) {
+        final double pRemember = Math.exp(-distance / memoryLength);
+        return Math.log((nextState == currentState ? pRemember : 0) + (1 - pRemember)*weights[nextState]);
+    }
+
+    public double getMemoryLength() { return memoryLength; }
+    public double getWeight(final int k) { return weights[k]; }
+    public double[] getWeights() { return Arrays.copyOf(weights, weights.length); }
+    public double getMinorAlleleFraction(final int state) { return minorAlleleFractions[state]; }
+    public double[] getMinorFractions() { return Arrays.copyOf(minorAlleleFractions, minorAlleleFractions.length); }
+    public AllelicPanelOfNormals getAllelicPON() { return allelicPON; }
+    public AllelicBiasParameters getParameters() { return parameters; }
+
+    //TODO: this is quite redundant with the distance in CopyNumberTriStateHiddenMArkovModel
+    //TODO: some refactoring is in order
+    protected static double calculateDistance(final Locatable from, final Locatable to) {
+        if (!from.getContig().equals(to.getContig())) {
+            return Double.POSITIVE_INFINITY;
+        } else {
+            final double toMidpoint = (to.getStart() + to.getEnd())/2;
+            final double fromMidpoint = (from.getStart() + from.getEnd())/2;
+            return  Math.abs(toMidpoint - fromMidpoint);
+        }
+    }
+}

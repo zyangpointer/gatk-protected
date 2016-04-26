@@ -189,6 +189,27 @@ public class GATKProtectedMathUtils {
         return new EnumeratedDistribution<>(rng, pmf).sample();
     }
 
+/** Compute Z=X+Y for two numeric vectors X and Y
+     *
+     * @param x                 First vector
+     * @param y                 Second vector
+     * @return Vector of same length as x and y so that z[k] = x[k]+y[k]
+     */
+    public static double[] vectorSum(final double[]x, final double[] y) {
+        Utils.nonNull(x, "x is null");
+        Utils.nonNull(y, "y is null");
+        if (x.length != y.length)
+            throw new IllegalArgumentException("BUG: Lengths of x and y must be the same");
+
+        final double[] result = new double[x.length];
+        for (int k=0; k <x.length; k++) {
+            result[k] = x[k] + y[k];
+        }
+
+        return result;
+    }
+
+
     /**
      *  Return an array with column sums in each entry
      *

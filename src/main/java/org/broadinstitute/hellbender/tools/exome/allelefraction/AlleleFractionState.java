@@ -5,7 +5,6 @@ import org.broadinstitute.hellbender.utils.mcmc.Parameter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -39,24 +38,6 @@ public final class AlleleFractionState extends AbstractParameterizedState {
                 new MinorFractions(minorFractions())));
     }
 
-    //copy the state with reference to the SAME minorFractions list data (to save copying) but different value of
-    //one of the scalar parameters
-    //This is dangerous and minorFractions should not be modified in the copy.
-    //
-    //The purpose of this is to make an MCMC proposal state for calculating a likelihood with one of the scalar parameters
-    //modified (these are unboxed in the getters, so changing these in the copy is safe)
-    public AlleleFractionState shallowCopyWithProposedMeanBias(final double proposedMeanBias) {
-        return new AlleleFractionState(proposedMeanBias, biasVariance(), outlierProbability(), minorFractions());
-    }
-
-    public AlleleFractionState shallowCopyWithProposedBiasVariance(final double proposedBiasVariance) {
-        return new AlleleFractionState(meanBias(), proposedBiasVariance, outlierProbability(), minorFractions());
-    }
-
-    public AlleleFractionState shallowCopyWithProposedOutlierProbability(final double proposedOutlierProbability) {
-        return new AlleleFractionState(meanBias(), biasVariance(), proposedOutlierProbability, minorFractions());
-    }
-
     public AlleleFractionState(final double meanBias, final double biasVariance, final double outlierProbability,
                                final MinorFractions minorFractions) {
         super(Arrays.asList(
@@ -64,14 +45,6 @@ public final class AlleleFractionState extends AbstractParameterizedState {
                 new Parameter<>(BIAS_VARIANCE_NAME, biasVariance),
                 new Parameter<>(P_OUTLIER_NAME, outlierProbability),
                 new Parameter<>(MINOR_FRACTIONS_NAME, minorFractions)));
-    }
-
-    /**
-     * Constructs a single-segment state.
-     */
-    public AlleleFractionState(final double meanBias, final double biasVariance, final double outlierProbability,
-                               final double minorFraction) {
-        this(meanBias, biasVariance, outlierProbability, new AlleleFractionState.MinorFractions(Collections.singletonList(minorFraction)));
     }
 
     public double meanBias() {
@@ -88,6 +61,10 @@ public final class AlleleFractionState extends AbstractParameterizedState {
 
     public MinorFractions minorFractions() {
         return get(MINOR_FRACTIONS_NAME, MinorFractions.class);
+    }
+
+    public AllelicBiasParameters getParameters() {
+        return new AllelicBiasParameters(meanBias(), biasVariance(), outlierProbability());
     }
 
     public double minorFractionInSegment(final int segment) {
