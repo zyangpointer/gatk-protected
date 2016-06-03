@@ -1,5 +1,6 @@
 package org.broadinstitute.hellbender.utils.hmm;
 
+import com.google.common.annotations.VisibleForTesting;
 import htsjdk.samtools.util.Locatable;
 import org.broadinstitute.hellbender.tools.exome.allelefraction.AllelicBiasParameters;
 import org.broadinstitute.hellbender.tools.exome.allelefraction.AllelicPanelOfNormals;
@@ -33,8 +34,8 @@ import java.util.stream.IntStream;
  */
 public abstract class ClusteringGenomicHMM<T> implements HiddenMarkovModel<T, SimpleInterval, Integer> {
     private double memoryLength;
-    private final double[] hiddenStateValues;
-    private final double[] weights;
+    protected final double[] hiddenStateValues;
+    protected final double[] weights;
 
     public ClusteringGenomicHMM(final double[] hiddenStateValues, final double[] weights, final double memoryLength) {
         Utils.nonNull(hiddenStateValues);
@@ -61,9 +62,8 @@ public abstract class ClusteringGenomicHMM<T> implements HiddenMarkovModel<T, Si
         return Math.log(weights[state]);
     }
 
-    public double logEmissionProbability(final T data, final Integer state, final SimpleInterval position) {
-        return logEmissionProbability(data, hiddenStateValues[state]);
-    }
+    // Child classes must specify their own emission likelihoods
+    public abstract double logEmissionProbability(final T data, final Integer state, final SimpleInterval position);
 
     public double logTransitionProbability(final Integer currentState, final SimpleInterval currentPosition,
                                            final Integer nextState, final SimpleInterval nextPosition) {
@@ -71,15 +71,13 @@ public abstract class ClusteringGenomicHMM<T> implements HiddenMarkovModel<T, Si
     }
     // Done with implementation ----------------------------------------------------------------------------------------
 
-    // Child classes must specify their own emission likelihoods
-    protected abstract double logEmissionProbability(final T data, final double hiddenStateValue);
-
     private double logTransitionProbability(final Integer currentState, final Integer nextState, final double distance) {
         final double pRemember = Math.exp(-distance / memoryLength);
         return Math.log((nextState == currentState ? pRemember : 0) + (1 - pRemember)*weights[nextState]);
     }
 
-    protected static double calculateDistance(final Locatable from, final Locatable to) {
+    @VisibleForTesting
+    public static double calculateDistance(final Locatable from, final Locatable to) {
         if (!from.getContig().equals(to.getContig())) {
             return Double.POSITIVE_INFINITY;
         } else {

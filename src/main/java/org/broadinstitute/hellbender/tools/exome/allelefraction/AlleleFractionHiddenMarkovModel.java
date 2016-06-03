@@ -62,6 +62,11 @@ final public class AlleleFractionHiddenMarkovModel extends ClusteringGenomicHMM<
         this.parameters = Utils.nonNull(parameters);
     }
 
+
+    public double logEmissionProbability(final AllelicCount data, final Integer state, final SimpleInterval position) {
+        return logEmissionProbability(data, hiddenStateValues[state]);
+    }
+
     /**
      * Visible for {@link AlleleFractionSegmenter}
      */

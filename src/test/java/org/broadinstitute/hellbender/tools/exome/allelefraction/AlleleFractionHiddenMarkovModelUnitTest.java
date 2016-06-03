@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Created by davidben on 5/15/16.
+ * @author David Benjamin &lt;davidben@broadinstitute.org&gt;
  */
 public class AlleleFractionHiddenMarkovModelUnitTest {
     final static AllelicBiasParameters NO_BIAS_OR_OUTLIERS_PARAMS = new AllelicBiasParameters(1.0, 1e-10, 1e-10);
