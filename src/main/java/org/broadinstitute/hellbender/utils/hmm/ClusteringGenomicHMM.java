@@ -39,7 +39,6 @@ public abstract class ClusteringGenomicHMM<T> implements HiddenMarkovModel<T, Si
     public ClusteringGenomicHMM(final double[] hiddenStateValues, final double[] weights, final double memoryLength) {
         Utils.nonNull(hiddenStateValues);
         Utils.nonNull(weights);
-        Arrays.stream(hiddenStateValues).forEach(f -> ParamUtils.inRange(f, 0, 0.5, "minor fractions must be between 0 and 1/2."));
         Arrays.stream(weights).forEach(w -> ParamUtils.isPositiveOrZero(w, "weights may not be negative."));
 
         if (hiddenStateValues.length != weights.length) {
