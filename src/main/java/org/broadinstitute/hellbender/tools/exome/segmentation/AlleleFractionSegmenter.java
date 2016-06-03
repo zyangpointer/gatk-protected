@@ -1,4 +1,4 @@
-package org.broadinstitute.hellbender.tools.exome.allelefraction;
+package org.broadinstitute.hellbender.tools.exome.segmentation;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.math3.analysis.integration.SimpsonIntegrator;
@@ -7,6 +7,10 @@ import org.apache.commons.math3.special.Gamma;
 import org.broadinstitute.hellbender.tools.exome.AllelicCount;
 import org.broadinstitute.hellbender.tools.exome.AllelicCountCollection;
 import org.broadinstitute.hellbender.tools.exome.ModeledSegment;
+import org.broadinstitute.hellbender.tools.exome.allelefraction.AlleleFractionInitializer;
+import org.broadinstitute.hellbender.tools.exome.allelefraction.AllelicBiasParameters;
+import org.broadinstitute.hellbender.tools.exome.allelefraction.AllelicPanelOfNormals;
+import org.broadinstitute.hellbender.tools.exome.segmentation.AlleleFractionHiddenMarkovModel;
 import org.broadinstitute.hellbender.utils.Dirichlet;
 import org.broadinstitute.hellbender.utils.OptimizationUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;

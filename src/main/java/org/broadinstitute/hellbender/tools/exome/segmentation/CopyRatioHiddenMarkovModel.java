@@ -1,20 +1,11 @@
-package org.broadinstitute.hellbender.tools.exome.allelefraction;
+package org.broadinstitute.hellbender.tools.exome.segmentation;
 
-import htsjdk.samtools.util.Locatable;
 import org.apache.commons.math3.distribution.AbstractRealDistribution;
 import org.apache.commons.math3.distribution.NormalDistribution;
-import org.broadinstitute.hellbender.tools.exome.AllelicCount;
-import org.broadinstitute.hellbender.utils.MathUtils;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
-import org.broadinstitute.hellbender.utils.Utils;
-import org.broadinstitute.hellbender.utils.hmm.ClusteringGenomicHMM;
-import org.broadinstitute.hellbender.utils.hmm.HiddenMarkovModel;
-import org.broadinstitute.hellbender.utils.param.ParamUtils;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 /**
  * The CopyRatio Hidden Markov Model is a generative model describing latent CNV states

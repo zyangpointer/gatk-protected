@@ -40,16 +40,16 @@ public final class AlleleFractionInitializer {
     protected static final double INITIAL_MEAN_BIAS = 1.0;
     protected static final double INITIAL_BIAS_VARIANCE = 0.1;   // this is an overestimate, but starting small makes it slow for
                                                                  // mean bias to escape a bad initial guess
-    protected static final AllelicBiasParameters INITIAL_PARAMETERS =
+    public static final AllelicBiasParameters INITIAL_PARAMETERS =
         new AllelicBiasParameters(INITIAL_MEAN_BIAS, INITIAL_BIAS_VARIANCE, INITIAL_OUTLIER_PROBABILITY);
 
     protected static final double LOG_LIKELIHOOD_CONVERGENCE_THRESHOLD = 0.5;
     protected static final int MAX_ITERATIONS = 50;
 
     //define maxima of search intervals for maximum likelihood -- parameter values above these would be ridiculous
-    protected static final double MAX_REASONABLE_OUTLIER_PROBABILITY = 0.1;
-    protected static final double MAX_REASONABLE_MEAN_BIAS = 5.0;
-    protected static final double MAX_REASONABLE_BIAS_VARIANCE = 1.0;
+    public static final double MAX_REASONABLE_OUTLIER_PROBABILITY = 0.1;
+    public static final double MAX_REASONABLE_MEAN_BIAS = 5.0;
+    public static final double MAX_REASONABLE_BIAS_VARIANCE = 1.0;
 
     //the minor allele fraction of a segment must be less than one half by definition
     private static final double MAX_MINOR_ALLELE_FRACTION = 0.5;

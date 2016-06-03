@@ -1,16 +1,12 @@
-package org.broadinstitute.hellbender.tools.exome.allelefraction;
+package org.broadinstitute.hellbender.tools.exome.segmentation;
 
 import org.broadinstitute.hellbender.CommandLineProgramTest;
 import org.broadinstitute.hellbender.cmdline.ExomeStandardArgumentDefinitions;
-import org.broadinstitute.hellbender.cmdline.StandardArgumentDefinitions;
-import org.broadinstitute.hellbender.utils.segmenter.RCBSSegmenter;
-import org.broadinstitute.hellbender.utils.segmenter.SegmenterUnitTest;
+import org.broadinstitute.hellbender.tools.exome.segmentation.PerformAllelicSegmentation;
 import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
-
-import static org.testng.Assert.*;
 
 /**
  * Created by davidben on 5/23/16.

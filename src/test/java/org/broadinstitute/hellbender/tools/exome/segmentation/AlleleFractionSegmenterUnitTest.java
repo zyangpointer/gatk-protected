@@ -1,4 +1,4 @@
-package org.broadinstitute.hellbender.tools.exome.allelefraction;
+package org.broadinstitute.hellbender.tools.exome.segmentation;
 
 import org.apache.commons.math3.distribution.BinomialDistribution;
 import org.apache.commons.math3.distribution.GammaDistribution;
@@ -7,6 +7,10 @@ import org.apache.commons.math3.random.RandomGeneratorFactory;
 import org.broadinstitute.hellbender.tools.exome.AllelicCount;
 import org.broadinstitute.hellbender.tools.exome.AllelicCountCollection;
 import org.broadinstitute.hellbender.tools.exome.ModeledSegment;
+import org.broadinstitute.hellbender.tools.exome.allelefraction.AllelicBiasParameters;
+import org.broadinstitute.hellbender.tools.exome.allelefraction.AllelicPanelOfNormals;
+import org.broadinstitute.hellbender.tools.exome.segmentation.AlleleFractionHiddenMarkovModel;
+import org.broadinstitute.hellbender.tools.exome.segmentation.AlleleFractionSegmenter;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.testng.Assert;
 import org.testng.annotations.Test;
