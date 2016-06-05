@@ -66,6 +66,9 @@ public abstract class ClusteringGenomicHMM<T> implements HiddenMarkovModel<T, Si
     // Child classes must specify their own emission likelihoods
     public abstract double logEmissionProbability(final T data, final Integer state, final SimpleInterval position);
 
+    // Child classes must specify their own emission likelihoods
+    public abstract double logEmissionProbability(final T data, final double hiddenStateValue);
+
     public double logTransitionProbability(final Integer currentState, final SimpleInterval currentPosition,
                                            final Integer nextState, final SimpleInterval nextPosition) {
         return logTransitionProbability(currentState, nextState, calculateDistance(currentPosition, nextPosition));
