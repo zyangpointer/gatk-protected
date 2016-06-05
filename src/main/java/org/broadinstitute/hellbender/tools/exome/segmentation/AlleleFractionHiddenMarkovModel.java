@@ -66,7 +66,7 @@ final public class AlleleFractionHiddenMarkovModel extends ClusteringGenomicHMM<
     /**
      * Visible for {@link AlleleFractionSegmenter}
      */
-    protected double logEmissionProbability(final AllelicCount data, final double minorFraction) {
+    public double logEmissionProbability(final AllelicCount data, final double minorFraction) {
         return logEmissionProbability(data, minorFraction, parameters, allelicPON);
     }
 

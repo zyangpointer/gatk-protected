@@ -76,7 +76,6 @@ public class PerformAllelicSegmentation extends CommandLineProgram {
                 allelicPoNFile != null ? new AllelicPanelOfNormals(allelicPoNFile) : AllelicPanelOfNormals.EMPTY_PON;
         final AllelicCountCollection acc = new AllelicCountCollection(snpCountsFile);
         final AlleleFractionSegmenter segmenter = new AlleleFractionSegmenter(initialNumStates, acc, allelicPoN);
-        segmenter.learnModel();
         final List<ModeledSegment> segments = segmenter.findSegments();
         SegmentUtils.writeModeledSegmentFile(outputSegmentsFile, segments, sampleName, true);
 

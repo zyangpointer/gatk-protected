@@ -23,15 +23,15 @@ import java.util.stream.IntStream;
  */
 public abstract class ClusteringGenomicHMMSegmenter<T> {
     private double concentration;
-    private double[] weights; //one per hidden state
-    private double[] hiddenStateValues;
-    private double memoryLength;
+    protected double[] weights; //one per hidden state
+    protected double[] hiddenStateValues;
+    protected double memoryLength;
 
-    private final List<T> data;
-    private final List<SimpleInterval> positions;
+    protected final List<T> data;
+    protected final List<SimpleInterval> positions;
     private final double[] distances;   //distances[n] is the n to n+1 distance
 
-    private static double NEGLIGIBLE_POSTERIOR_FOR_M_STEP = 0.01;
+    protected static double NEGLIGIBLE_POSTERIOR_FOR_M_STEP = 0.01;
 
     //private static final Logger logger = LogManager.getLogger(AlleleFractionSegmenter.class);
     private static final double MINIMUM_MEMORY_LENGTH = 1;
@@ -61,7 +61,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         concentration = 1;
         weights = Collections.nCopies(initialNumStates, 1.0/initialNumStates).stream().mapToDouble(x->x).toArray();   //uniform
         memoryLength = DEFAULT_MEMORY_LENGTH;
-        initializeHiddenStateValues();
+        initializeHiddenStateValues(initialNumStates);
         initializeAdditionalParameters();
 
         this.positions = positions;
@@ -71,10 +71,10 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         learn();
     }
 
-    protected abstract void initializeHiddenStateValues();
+    protected abstract void initializeHiddenStateValues(final int K);
 
     // override this if any parameters other than weights, memory length, and hidden state values must be initialized
-    protected void initializeAdditionalParameters() { }
+    protected abstract void initializeAdditionalParameters();
 
     /**
      * given current values of memory length, weights, hidden state values, and any other parameters that a child class
@@ -82,15 +82,6 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
      * @return
      */
     protected abstract ClusteringGenomicHMM<T> makeModel();
-
-    /**
-     * implementattion of iniatialize model for AF-HMM
-     *         // evenly spaced minor fractions from 1/2 to 1/(2K)
-     final double[] evenlySpacedAlleleFractions = IntStream.range(0, K).mapToDouble(n ->  ((double) K - n) / (2*K)).toArray();
-     * model = new AlleleFractionHiddenMarkovModel(evenlySpacedAlleleFractions, flatWeights, DEFAULT_MEMORY_LENGTH,
-     allelicPoN, AlleleFractionInitializer.INITIAL_PARAMETERS);
-     * @return
-     */
 
     public List<ModeledSegment> findSegments() {
         final ClusteringGenomicHMM<T> model = makeModel();
@@ -132,7 +123,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
             final boolean converged = oldWeights.length == weights.length &&
                     Math.abs(oldMemoryLength - memoryLength) < MEMORY_LENGTH_CONVERGENCE_THRESHOLD &&
                     GATKProtectedMathUtils.maxDifference(oldWeights, weights) < CONVERGENCE_THRESHOLD &&
-                    GATKProtectedMathUtils.maxDifference(oldHiddenStateValues, hiddenStateValues) < CONVERGENCE_THRESHOLD
+                    GATKProtectedMathUtils.maxDifference(oldHiddenStateValues, hiddenStateValues) < CONVERGENCE_THRESHOLD;
             //break;  // if no continue was hit model has converged
         }
     }
@@ -143,10 +134,12 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         relearnHiddenStateValues(expectationStep);
         relearnWeights(expectationStep);
         relearnMemoryLength(expectationStep);
-        final AllelicBiasParameters newParameters = reestimateParameters(expectationStep);
+        relearnAdditionalParameters(expectationStep);
         pruneUnusedComponents();
         relearnConcentration();
     }
+
+    protected void relearnAdditionalParameters(final ExpectationStep eStep) { }
 
     private void relearnWeights(final ExpectationStep expectationStep) {
         final Dirichlet priorOnWeights = Dirichlet.symmetricDirichlet(weights.length, concentration);
@@ -224,6 +217,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
     }
 
     private void relearnHiddenStateValues(final ExpectationStep eStep) {
+        final ClusteringGenomicHMM<T> model = makeModel();
         // by convention, state = 0 represents the neutral value (minor allele fraction = 1/2 or copy ratio = 1)
         // which we always retain and do not wish to adjust via MLE.  Thus we start at state 1
         for (final int state : IntStream.range(1, hiddenStateValues.length).toArray()) {
@@ -238,30 +232,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         }
     }
 
-    private AllelicBiasParameters reestimateParameters(final ExpectationStep eStep) {
-        final Function<AllelicBiasParameters, Double> emissionLogLikelihood = params -> {
-            double logLikelihood = 0.0;
-            for (int position = 0; position < positions.size(); position++) {
-                for (int state = 0; state < weights.length; state++) {
-                    final double eStepPosterior = eStep.pStateAtPosition(state, position);
-                    logLikelihood += eStepPosterior < NEGLIGIBLE_POSTERIOR_FOR_M_STEP ? 0 :eStepPosterior
-                            * AlleleFractionHiddenMarkovModel.logEmissionProbability(data.get(position), model.getMinorAlleleFraction(state), params, allelicPoN);
-                }
-            }
-            return logLikelihood;
-        };
 
-        final Function<Double, Double> meanBiasObjective = mean -> emissionLogLikelihood.apply(model.getParameters().copyWithNewMeanBias(mean));
-        final double newMeanBias = OptimizationUtils.quickArgmax(meanBiasObjective, 0, AlleleFractionInitializer.MAX_REASONABLE_MEAN_BIAS, model.getParameters().getMeanBias());
-
-        final Function<Double, Double> biasVarianceObjective = variance -> emissionLogLikelihood.apply(model.getParameters().copyWithNewBiasVariance(variance));
-        final double newBiasVariance = OptimizationUtils.quickArgmax(biasVarianceObjective, 0, AlleleFractionInitializer.MAX_REASONABLE_BIAS_VARIANCE, model.getParameters().getBiasVariance());
-
-        final Function<Double, Double> outlierProbabilityObjective = pOutlier -> emissionLogLikelihood.apply(model.getParameters().copyWithNewOutlierProbability(pOutlier));
-        final double newOutlierProbability = OptimizationUtils.quickArgmax(outlierProbabilityObjective, 0, AlleleFractionInitializer.MAX_REASONABLE_OUTLIER_PROBABILITY, model.getParameters().getOutlierProbability());
-
-        return new AllelicBiasParameters(newMeanBias, newBiasVariance, newOutlierProbability);
-    }
 
     /**
      * Stores the results of the expectation (E) step in which we run the forward-backward algorithm
@@ -269,7 +240,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
      * of hidden states at consecutive het positions; 3) hidden state memory being lost at each het position;
      * and the expected number of 4) transitions to each state with memory loss, totalled over all het positions
      */
-    final private class ExpectationStep {
+    final protected class ExpectationStep {
         private final int K = weights.length;
         private final int N = positions.size();
 

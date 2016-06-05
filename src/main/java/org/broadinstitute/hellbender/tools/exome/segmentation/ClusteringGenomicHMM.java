@@ -63,10 +63,10 @@ public abstract class ClusteringGenomicHMM<T> implements HiddenMarkovModel<T, Si
         return Math.log(weights[state]);
     }
 
+    // TODO: it's awkward that these are both required -- reason is that copy ratio emission is stored
+    // TODO: by hidden state (Integer)
     // Child classes must specify their own emission likelihoods
     public abstract double logEmissionProbability(final T data, final Integer state, final SimpleInterval position);
-
-    // Child classes must specify their own emission likelihoods
     public abstract double logEmissionProbability(final T data, final double hiddenStateValue);
 
     public double logTransitionProbability(final Integer currentState, final SimpleInterval currentPosition,

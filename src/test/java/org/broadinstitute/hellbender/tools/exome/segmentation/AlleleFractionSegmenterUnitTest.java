@@ -80,7 +80,6 @@ public class AlleleFractionSegmenterUnitTest {
         }
 
         final AlleleFractionSegmenter segmenter = new AlleleFractionSegmenter(10, counts, AllelicPanelOfNormals.EMPTY_PON);
-        final AlleleFractionHiddenMarkovModel learnedModel = segmenter.learnModel();
         final List<ModeledSegment> segments = segmenter.findSegments();
         final double[] segmentMinorFractions = segments.stream()
                 .flatMap(s -> Collections.nCopies((int) s.getTargetCount(), s.getSegmentMean()).stream())
