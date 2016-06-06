@@ -64,7 +64,6 @@ final public class AlleleFractionSegmenter extends ClusteringGenomicHMMSegmenter
         return new AlleleFractionHiddenMarkovModel(hiddenStateValues, weights, memoryLength, allelicPoN, biasParameters);
     }
 
-    //TODO: ugly code duplication between this and parent class' relearnHiddenStateValues method
     @Override
     protected void relearnAdditionalParameters(final ExpectationStep eStep) {
         final Function<AllelicBiasParameters, Double> emissionLogLikelihood = params -> {
@@ -90,4 +89,10 @@ final public class AlleleFractionSegmenter extends ClusteringGenomicHMMSegmenter
 
         biasParameters = new AllelicBiasParameters(newMeanBias, newBiasVariance, newOutlierProbability);
     }
+
+    @Override
+    protected double minHiddenStateValue() { return 0.0; }
+
+    @Override
+    protected double maxHiddenStateValue() { return  0.5; }
 }

@@ -142,16 +142,13 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         relearnConcentration();
     }
 
-    protected void relearnAdditionalParameters(final ExpectationStep eStep) { }
+    protected abstract void relearnAdditionalParameters(final ExpectationStep eStep);
 
     private void relearnWeights(final ExpectationStep expectationStep) {
         final Dirichlet priorOnWeights = Dirichlet.symmetricDirichlet(weights.length, concentration);
         weights =  new Dirichlet(priorOnWeights, expectationStep.pseudocounts()).effectiveMultinomialWeights();
     }
 
-
-    //TODO: detect candidate components to prune heuristically, but perform a likelihood test to decide whether to absorb thwem into
-    // TODO: neighbor or delete.
     //filter out components that have low weight and are too close to another component -- these will
     // die out eventually in EM, but very slowly, so we hasten their demise for quicker convergence
     private void pruneUnusedComponents() {
@@ -224,16 +221,18 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         // by convention, state = 0 represents the neutral value (minor allele fraction = 1/2 or copy ratio = 1)
         // which we always retain and do not wish to adjust via MLE.  Thus we start at state 1
         for (final int state : IntStream.range(1, hiddenStateValues.length).toArray()) {
-                final Function<Double, Double> objective = f -> IntStream.range(0, data.size())
-                        .mapToDouble(n -> {
-                            final double eStepPosterior = eStep.pStateAtPosition(state, n);
-                            return eStepPosterior < NEGLIGIBLE_POSTERIOR_FOR_M_STEP ? 0 : eStepPosterior * model.logEmissionProbability(data.get(n), f);
-                        })
-                        .sum();
-            //TODO put in generic min and max values
-            hiddenStateValues[state] = OptimizationUtils.quickArgmax(objective, 0, 0.5, hiddenStateValues[state]);
+            final Function<Double, Double> objective = f -> IntStream.range(0, data.size())
+                    .filter(n -> eStep.pStateAtPosition(state, n) > NEGLIGIBLE_POSTERIOR_FOR_M_STEP)
+                    .mapToDouble(n -> eStep.pStateAtPosition(state, n) * model.logEmissionProbability(data.get(n), f))
+                    .sum();
+            hiddenStateValues[state] = OptimizationUtils.quickArgmax(objective, minHiddenStateValue(),
+                    maxHiddenStateValue(), hiddenStateValues[state]);
         }
     }
+
+    protected abstract double minHiddenStateValue();
+    protected abstract double maxHiddenStateValue();
+
 
 
 
