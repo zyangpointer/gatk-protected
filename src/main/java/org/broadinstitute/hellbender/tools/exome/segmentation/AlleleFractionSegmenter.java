@@ -45,6 +45,10 @@ final public class AlleleFractionSegmenter extends ClusteringGenomicHMMSegmenter
         this.allelicPoN = Utils.nonNull(allelicPoN);
     }
 
+    /**
+     * evenly-spaced minor allele fractions going from 1/2 to 0
+     * @param K the initial number of hidden states
+     */
     @Override
     protected void initializeHiddenStateValues(final int K) {
         hiddenStateValues = IntStream.range(0, K).mapToDouble(n ->  ((double) K - n) / (2*K)).toArray();
@@ -53,11 +57,6 @@ final public class AlleleFractionSegmenter extends ClusteringGenomicHMMSegmenter
     @Override
     protected void initializeAdditionalParameters() {
         biasParameters = new AllelicBiasParameters(1.0, 1e-3, 1e-2);
-
-        //TODO: hack to get around fact that super() must be called first in c'tor
-        //TODO: but super must learn, which fails if no allelic PoN
-        //TODO since c'tor calls this method, it's at least not null
-        allelicPoN = AllelicPanelOfNormals.EMPTY_PON;
     }
 
     @Override
@@ -65,7 +64,7 @@ final public class AlleleFractionSegmenter extends ClusteringGenomicHMMSegmenter
         return new AlleleFractionHiddenMarkovModel(hiddenStateValues, weights, memoryLength, allelicPoN, biasParameters);
     }
 
-    //TODO: ugly code duplciation between this and parent class' relearnHiddenStateValues method
+    //TODO: ugly code duplication between this and parent class' relearnHiddenStateValues method
     @Override
     protected void relearnAdditionalParameters(final ExpectationStep eStep) {
         final Function<AllelicBiasParameters, Double> emissionLogLikelihood = params -> {

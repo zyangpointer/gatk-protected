@@ -26,6 +26,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
     protected double[] weights; //one per hidden state
     protected double[] hiddenStateValues;
     protected double memoryLength;
+    private boolean parametersHaveBeenLearned = false;
 
     protected final List<T> data;
     protected final List<SimpleInterval> positions;
@@ -61,14 +62,12 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         concentration = 1;
         weights = Collections.nCopies(initialNumStates, 1.0/initialNumStates).stream().mapToDouble(x->x).toArray();   //uniform
         memoryLength = DEFAULT_MEMORY_LENGTH;
-        initializeHiddenStateValues(initialNumStates);
-        initializeAdditionalParameters();
-
         this.positions = positions;
         distances = IntStream.range(0, positions.size() - 1)
                 .mapToDouble(n -> ClusteringGenomicHMM.calculateDistance(positions.get(n), positions.get(n + 1)))
                 .toArray();
-        learn();
+        initializeHiddenStateValues(initialNumStates);
+        initializeAdditionalParameters();
     }
 
     protected abstract void initializeHiddenStateValues(final int K);
@@ -84,6 +83,9 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
     protected abstract ClusteringGenomicHMM<T> makeModel();
 
     public List<ModeledSegment> findSegments() {
+        if (!parametersHaveBeenLearned) {
+            learn();
+        }
         final ClusteringGenomicHMM<T> model = makeModel();
         List<Integer> states = ViterbiAlgorithm.apply(data, positions, model);
         List<ModeledSegment> result = new ArrayList<>();
@@ -126,6 +128,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
                     GATKProtectedMathUtils.maxDifference(oldHiddenStateValues, hiddenStateValues) < CONVERGENCE_THRESHOLD;
             //break;  // if no continue was hit model has converged
         }
+        parametersHaveBeenLearned = true;
     }
 
     // update the model and the concentration parameter with a single EM step
