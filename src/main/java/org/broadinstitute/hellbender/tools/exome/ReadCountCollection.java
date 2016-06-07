@@ -305,6 +305,8 @@ public final class ReadCountCollection implements Serializable {
         }
     }
 
+
+    //TODO: delete this once we use the new coverage model for germline calls
     /**
      * Express coverage in terms of Z scores with respect to the coverage distribution of the corresponding target.
      * @return a new collection.

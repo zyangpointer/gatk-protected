@@ -10,6 +10,7 @@ import org.broadinstitute.hellbender.exceptions.UserException;
 import java.io.File;
 import java.io.IOException;
 
+//TODO: delete this class once we use the new coverage model for germline calls
 /**
  * Calculates Z scores of coverage.
  * <p>
