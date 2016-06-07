@@ -55,7 +55,11 @@ final public class CopyRatioHiddenMarkovModel extends ClusteringGenomicHMM<Doubl
     }
 
     public double logEmissionProbability(final Double data, final double copyRatio) {
-        return new NormalDistribution(null, copyRatio, logCoverageStandardDeviation).logDensity(data);
+        return logEmissionProbability(data, copyRatio, logCoverageStandardDeviation);
+    }
+
+    public static double logEmissionProbability(final Double data, final double copyRatio, final double standardDeviation) {
+        return new NormalDistribution(null, copyRatio, standardDeviation).logDensity(data);
     }
 
     public double getCopyRatio(final int state) { return getHiddenStateValue(state); }
