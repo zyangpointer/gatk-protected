@@ -159,31 +159,25 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         final double superLowWeight = 5e-4;
 
         //reverse order to preserve the convention that 0th component is f = 1/2
-        final SortedMap<Double, Double> sortedFractionsAndWeights = new TreeMap<>(Collections.reverseOrder());
         final int K = weights.length;
-        IntStream.range(0, K).forEach(n -> sortedFractionsAndWeights.put(hiddenStateValues[n], weights[n]));
 
-        final double[] sortedFractions = sortedFractionsAndWeights.keySet().stream().mapToDouble(x->x).toArray();
-        final double[] sortedWeights = sortedFractionsAndWeights.values().stream().mapToDouble(x->x).toArray();
-
-        // look for low-weight components that also have less weight than their neighbors
-        // never prune 0th component, which is neutral
-        final Set<Integer> componentsToPrune = IntStream.range(0, K)
-                .filter(n -> n != NEUTRAL_VALUE_INDEX)
-                .filter(n -> sortedWeights[n] < lowWeight)
-                .filter(n -> sortedWeights[n] < sortedWeights[n-1])
-                .filter(n -> n + 1 < K && sortedWeights[n] < sortedWeights[n+1])
-                .filter(n -> Math.abs(sortedFractions[n] - sortedFractions[n - 1]) < hiddenStateValueThreshold
-                        || n + 1 < K && Math.abs(sortedFractions[n] - sortedFractions[n + 1]) < hiddenStateValueThreshold)
-                .boxed().collect(Collectors.toSet());
-
-        IntStream.range(0, K).filter(n -> n != NEUTRAL_VALUE_INDEX)
-                .filter(n -> sortedWeights[n] < superLowWeight).forEach(componentsToPrune::add);
+        final Set<Integer> componentsToPrune = new TreeSet<>();
+        for (final int state : IntStream.range(0, K).filter(n -> n != NEUTRAL_VALUE_INDEX).toArray()) {
+            final int closestOtherState = MathUtils.maxElementIndex(IntStream.range(0, K)
+                    .mapToDouble(n -> n == state ? Double.NEGATIVE_INFINITY : -Math.abs(hiddenStateValues[n] - hiddenStateValues[state]))
+                    .toArray());
+            final boolean hasLowWeight = weights[state] < lowWeight;
+            final boolean isCloseToNeighbor = Math.abs(hiddenStateValues[state] - hiddenStateValues[closestOtherState]) < hiddenStateValueThreshold;
+            final boolean hasLessWeightThanNeighbor = weights[state] < weights[closestOtherState];
+            if (weights[state] < superLowWeight || (hasLowWeight && isCloseToNeighbor && hasLessWeightThanNeighbor)) {
+                componentsToPrune.add(state);
+            }
+        }
 
         weights = IntStream.range(0, K)
-                .filter(n -> !componentsToPrune.contains(n)).mapToDouble(n -> sortedWeights[n]).toArray();
+                .filter(n -> !componentsToPrune.contains(n)).mapToDouble(n -> weights[n]).toArray();
         hiddenStateValues = IntStream.range(0, K)
-                .filter(n -> !componentsToPrune.contains(n)).mapToDouble(n -> sortedFractions[n]).toArray();
+                .filter(n -> !componentsToPrune.contains(n)).mapToDouble(n -> hiddenStateValues[n]).toArray();
     }
 
     // given weights from two consecutive iterations, "accelerate" the new weights by multiplying the amount
