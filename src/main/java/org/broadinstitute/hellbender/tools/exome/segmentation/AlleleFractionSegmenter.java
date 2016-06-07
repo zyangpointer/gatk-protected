@@ -30,6 +30,9 @@ final public class AlleleFractionSegmenter extends ClusteringGenomicHMMSegmenter
     private AllelicPanelOfNormals allelicPoN;
     private AllelicBiasParameters biasParameters;
 
+    private static final double MIN_MINOR_ALLELE_FRACTION = 0.0;
+    private static final double MAX_MINOR_ALLELE_FRACTION = 0.5;
+
     /**
      * Initialize the segmenter with its data and panel of normals, giving equal weight to a set of evenly-spaced
      * hidden minor allele fraction values.
@@ -91,8 +94,8 @@ final public class AlleleFractionSegmenter extends ClusteringGenomicHMMSegmenter
     }
 
     @Override
-    protected double minHiddenStateValue() { return 0.0; }
+    protected double minHiddenStateValue() { return MIN_MINOR_ALLELE_FRACTION; }
 
     @Override
-    protected double maxHiddenStateValue() { return  0.5; }
+    protected double maxHiddenStateValue() { return  MAX_MINOR_ALLELE_FRACTION; }
 }

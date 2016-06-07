@@ -31,7 +31,6 @@ public class AlleleFractionSegmenterUnitTest {
         final double[] trueMinorAlleleFractions = new double[] {0.1, 0.3, 0.5};
         final double trueMemoryLength = 1e5;
 
-        // the initial guess model starts with these parameters -- we're just testing learning of weights, minor fractions, and memory length
         final AllelicBiasParameters trueParams = new AllelicBiasParameters(1.0, 0.01, 0.01);
 
         AlleleFractionHiddenMarkovModel trueModel = new AlleleFractionHiddenMarkovModel(trueMinorAlleleFractions, trueWeights,
@@ -92,7 +91,4 @@ public class AlleleFractionSegmenterUnitTest {
 
         Assert.assertEquals(averageMinorFractionError, 0, 0.01);
     }
-
-
-
 }

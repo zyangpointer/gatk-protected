@@ -26,10 +26,13 @@ import java.util.stream.Stream;
  */
 final public class CopyRatioSegmenter extends ClusteringGenomicHMMSegmenter<Double> {
     private double logCoverageStandardDeviation;
-    private final double dataMin;
-    private final double dataMax;
 
-    private static double DEFAULT_INITIAL_STANDARD_DEVIATION = 0.1;
+
+    private static final double DEFAULT_INITIAL_STANDARD_DEVIATION = 0.1;
+    private static final double NEUTRAL_LOG_2_COPY_RATIO = 0.0;
+    private static final double MAX_REASONABLE_STANDARD_DEVIATION = 1.0;
+    private static final double MIN_LOG_2_COPY_RATIO = -5.0;
+    private static final double MAX_LOG_2_COPY_RATIO = 5.0;
 
     /**
      *
@@ -38,8 +41,6 @@ final public class CopyRatioSegmenter extends ClusteringGenomicHMMSegmenter<Doub
      */
     public CopyRatioSegmenter(final int initialNumStates, final List<SimpleInterval> positions, List<Double> data) {
         super(initialNumStates, positions, data);
-        dataMin = data.stream().mapToDouble(x->x).min().getAsDouble();
-        dataMax = data.stream().mapToDouble(x->x).max().getAsDouble();
     }
 
     /**
@@ -48,8 +49,8 @@ final public class CopyRatioSegmenter extends ClusteringGenomicHMMSegmenter<Doub
      */
     @Override
     protected void initializeHiddenStateValues(final int K) {
-        hiddenStateValues = GATKProtectedMathUtils.createEvenlySpacedPoints(dataMin, dataMax, K);
-        hiddenStateValues[0] = 0;
+        hiddenStateValues = GATKProtectedMathUtils.createEvenlySpacedPoints(-2, 2, K);
+        hiddenStateValues[NEUTRAL_VALUE_INDEX] = NEUTRAL_LOG_2_COPY_RATIO;
     }
 
     @Override
@@ -76,13 +77,13 @@ final public class CopyRatioSegmenter extends ClusteringGenomicHMMSegmenter<Doub
             return logLikelihood;
         };
 
-        logCoverageStandardDeviation = OptimizationUtils.quickArgmax(emissionLogLikelihood, 0, 1.0, logCoverageStandardDeviation);
-
+        logCoverageStandardDeviation = OptimizationUtils.quickArgmax(emissionLogLikelihood, 0,
+                MAX_REASONABLE_STANDARD_DEVIATION, logCoverageStandardDeviation);
     }
 
     @Override
-    protected double minHiddenStateValue() { return -5.0; }
+    protected double minHiddenStateValue() { return MIN_LOG_2_COPY_RATIO; }
 
     @Override
-    protected double maxHiddenStateValue() { return  5.0; }
+    protected double maxHiddenStateValue() { return  MAX_LOG_2_COPY_RATIO; }
 }

@@ -28,6 +28,8 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
     protected double memoryLength;
     private boolean parametersHaveBeenLearned = false;
 
+    protected static final int NEUTRAL_VALUE_INDEX = 0;
+
     protected final List<T> data;
     protected final List<SimpleInterval> positions;
     private final double[] distances;   //distances[n] is the n to n+1 distance
@@ -152,7 +154,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
     //filter out components that have low weight and are too close to another component -- these will
     // die out eventually in EM, but very slowly, so we hasten their demise for quicker convergence
     private void pruneUnusedComponents() {
-        final double minorFractionDistanceThreshold = 0.01;
+        final double hiddenStateValueThreshold = 0.01;
         final double lowWeight = 0.02;
         final double superLowWeight = 5e-4;
 
@@ -165,16 +167,18 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         final double[] sortedWeights = sortedFractionsAndWeights.values().stream().mapToDouble(x->x).toArray();
 
         // look for low-weight components that also have less weight than their neighbors
-        // never prune 0th component, which is neutral f = 1/2
-        final Set<Integer> componentsToPrune = IntStream.range(1, K)
+        // never prune 0th component, which is neutral
+        final Set<Integer> componentsToPrune = IntStream.range(0, K)
+                .filter(n -> n != NEUTRAL_VALUE_INDEX)
                 .filter(n -> sortedWeights[n] < lowWeight)
                 .filter(n -> sortedWeights[n] < sortedWeights[n-1])
                 .filter(n -> n + 1 < K && sortedWeights[n] < sortedWeights[n+1])
-                .filter(n -> Math.abs(sortedFractions[n] - sortedFractions[n - 1]) < minorFractionDistanceThreshold
-                        || n + 1 < K && Math.abs(sortedFractions[n] - sortedFractions[n + 1]) < minorFractionDistanceThreshold)
+                .filter(n -> Math.abs(sortedFractions[n] - sortedFractions[n - 1]) < hiddenStateValueThreshold
+                        || n + 1 < K && Math.abs(sortedFractions[n] - sortedFractions[n + 1]) < hiddenStateValueThreshold)
                 .boxed().collect(Collectors.toSet());
 
-        IntStream.range(1, K).filter(n -> sortedWeights[n] < superLowWeight).forEach(componentsToPrune::add);
+        IntStream.range(0, K).filter(n -> n != NEUTRAL_VALUE_INDEX)
+                .filter(n -> sortedWeights[n] < superLowWeight).forEach(componentsToPrune::add);
 
         weights = IntStream.range(0, K)
                 .filter(n -> !componentsToPrune.contains(n)).mapToDouble(n -> sortedWeights[n]).toArray();
@@ -220,7 +224,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
         final ClusteringGenomicHMM<T> model = makeModel();
         // by convention, state = 0 represents the neutral value (minor allele fraction = 1/2 or copy ratio = 1)
         // which we always retain and do not wish to adjust via MLE.  Thus we start at state 1
-        for (final int state : IntStream.range(1, hiddenStateValues.length).toArray()) {
+        for (final int state : IntStream.range(0, hiddenStateValues.length).filter(n -> n != NEUTRAL_VALUE_INDEX).toArray()) {
             final Function<Double, Double> objective = f -> IntStream.range(0, data.size())
                     .filter(n -> eStep.pStateAtPosition(state, n) > NEGLIGIBLE_POSTERIOR_FOR_M_STEP)
                     .mapToDouble(n -> eStep.pStateAtPosition(state, n) * model.logEmissionProbability(data.get(n), f))
