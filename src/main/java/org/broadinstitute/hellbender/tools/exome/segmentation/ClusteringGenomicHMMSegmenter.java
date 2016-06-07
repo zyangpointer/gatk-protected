@@ -30,6 +30,7 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
 
     protected static final int NEUTRAL_VALUE_INDEX = 0;
 
+    private static final int MAX_EM_ITERATIONS = 50;
     protected final List<T> data;
     protected final List<SimpleInterval> positions;
     private final double[] distances;   //distances[n] is the n to n+1 distance
@@ -117,18 +118,16 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
     @VisibleForTesting
     protected void learn() {
         int iteration = 0;
-        while (iteration < 15) {
-            final double momentum = 1 + 1.5 / (1.0 + (double) iteration++/20.0);
+        boolean converged = false;
+        while (!converged && iteration < MAX_EM_ITERATIONS) {
             final double oldMemoryLength = memoryLength;
             final double[] oldWeights = weights.clone();
             final double[] oldHiddenStateValues = hiddenStateValues.clone();
             performEMIteration();
-            weights = accelerateWeights(oldWeights, weights, momentum);
-            final boolean converged = oldWeights.length == weights.length &&
+            converged = oldWeights.length == weights.length &&
                     Math.abs(oldMemoryLength - memoryLength) < MEMORY_LENGTH_CONVERGENCE_THRESHOLD &&
                     GATKProtectedMathUtils.maxDifference(oldWeights, weights) < CONVERGENCE_THRESHOLD &&
                     GATKProtectedMathUtils.maxDifference(oldHiddenStateValues, hiddenStateValues) < CONVERGENCE_THRESHOLD;
-            //break;  // if no continue was hit model has converged
         }
         parametersHaveBeenLearned = true;
     }
@@ -178,13 +177,6 @@ public abstract class ClusteringGenomicHMMSegmenter<T> {
                 .filter(n -> !componentsToPrune.contains(n)).mapToDouble(n -> weights[n]).toArray();
         hiddenStateValues = IntStream.range(0, K)
                 .filter(n -> !componentsToPrune.contains(n)).mapToDouble(n -> hiddenStateValues[n]).toArray();
-    }
-
-    // given weights from two consecutive iterations, "accelerate" the new weights by multiplying the amount
-    // of change from the previous iteration
-    private static double[] accelerateWeights(final double[] oldWeights, final double[] newWeights, final double acceleration) {
-        return IntStream.range(0, newWeights.length)
-                .mapToDouble(n -> Math.exp(Math.log(oldWeights[n]) + acceleration*Math.log(newWeights[n]/oldWeights[n]))).toArray();
     }
 
     /**
