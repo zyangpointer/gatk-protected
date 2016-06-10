@@ -9,6 +9,10 @@ import org.broadinstitute.hellbender.cmdline.argumentcollections.ReferenceInputA
 import org.broadinstitute.hellbender.cmdline.argumentcollections.RequiredReferenceInputArgumentCollection;
 import org.broadinstitute.hellbender.cmdline.programgroups.CopyNumberProgramGroup;
 import org.broadinstitute.hellbender.exceptions.UserException;
+import org.broadinstitute.hellbender.tools.exome.pulldown.BalancedHeterozygousPileupPriorModel;
+import org.broadinstitute.hellbender.tools.exome.pulldown.BayesianHetPulldownCalculator;
+import org.broadinstitute.hellbender.tools.exome.pulldown.HeterogeneousHeterozygousPileupPriorModel;
+import org.broadinstitute.hellbender.tools.exome.pulldown.Pulldown;
 import org.broadinstitute.hellbender.utils.read.ReadConstants;
 
 import java.io.File;
