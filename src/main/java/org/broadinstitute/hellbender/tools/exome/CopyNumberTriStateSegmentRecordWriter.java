@@ -1,13 +1,12 @@
 package org.broadinstitute.hellbender.tools.exome;
 
 import org.broadinstitute.hellbender.utils.tsv.DataLine;
-import org.broadinstitute.hellbender.utils.tsv.TableColumnCollection;
 import org.broadinstitute.hellbender.utils.tsv.TableWriter;
 
 import java.io.File;
 import java.io.IOException;
 
-import static org.broadinstitute.hellbender.tools.exome.SegmentTableColumns.*;
+import static org.broadinstitute.hellbender.tools.exome.SegmentTableColumn.GERMLINE_CALL_COLUMNS;
 
 /**
  * Table writer for {@link CopyNumberTriStateSegmentRecord}, thus {@link CopyNumberTriStateSegment}
@@ -17,12 +16,8 @@ import static org.broadinstitute.hellbender.tools.exome.SegmentTableColumns.*;
  */
 public final class CopyNumberTriStateSegmentRecordWriter extends TableWriter<CopyNumberTriStateSegmentRecord> {
 
-    private static final TableColumnCollection COLUMNS = new TableColumnCollection(SAMPLE, CONTIG, START, END,
-            CALL, NUM_TARGETS, MEAN, SD, EXACT_QUALITY, SOME_QUALITY,  START_QUALITY, END_QUALITY,
-            EVENT_QUALITY);
-
     public CopyNumberTriStateSegmentRecordWriter(final File file) throws IOException {
-        super(file, COLUMNS);
+        super(file, GERMLINE_CALL_COLUMNS);
     }
 
     @Override

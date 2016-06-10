@@ -218,7 +218,7 @@ public final class GetBayesianHetCoverage extends CommandLineProgram {
         normalHetPulldown = normalHetPulldownCalculator.getHetPulldown(normalBamFile, hetCallingStringency);
 
         logger.info("Writing Het pulldown from normal reads to " + normalHetOutputFile.toString());
-        normalHetPulldown.write(normalHetOutputFile, AllelicCountTableColumns.AllelicCountTableVerbosity.FULL);
+        normalHetPulldown.write(normalHetOutputFile, AllelicCountTableColumn.AllelicCountTableVerbosity.FULL);
     }
 
     /**
@@ -238,7 +238,7 @@ public final class GetBayesianHetCoverage extends CommandLineProgram {
         tumorHetPulldown = tumorHetPulldownCalculator.getHetPulldown(tumorBamFile, hetCallingStringency);
 
         logger.info("Writing Het pulldown from tumor reads to " + tumorHetOutputFile.toString());
-        tumorHetPulldown.write(tumorHetOutputFile, AllelicCountTableColumns.AllelicCountTableVerbosity.FULL);
+        tumorHetPulldown.write(tumorHetOutputFile, AllelicCountTableColumn.AllelicCountTableVerbosity.FULL);
     }
 
     /**
@@ -257,7 +257,7 @@ public final class GetBayesianHetCoverage extends CommandLineProgram {
         normalHetPulldown = normalHetPulldownCalculator.getHetPulldown(normalBamFile, hetCallingStringency);
 
         logger.info("Writing Het pulldown from normal reads to " + normalHetOutputFile.toString());
-        normalHetPulldown.write(normalHetOutputFile, AllelicCountTableColumns.AllelicCountTableVerbosity.FULL);
+        normalHetPulldown.write(normalHetOutputFile, AllelicCountTableColumn.AllelicCountTableVerbosity.FULL);
 
         tumorHetPulldownCalculator = new BayesianHetPulldownCalculator(REFERENCE_ARGUMENTS.getReferenceFile(),
                 normalHetPulldown.getIntervals(), minimumMappingQuality, minimumBaseQuality, readDepthThreshold,
@@ -269,7 +269,7 @@ public final class GetBayesianHetCoverage extends CommandLineProgram {
                 normalHetPulldown);
 
         logger.info("Writing Het pulldown from tumor reads to " + tumorHetOutputFile.toString());
-        tumorHetPulldown.write(tumorHetOutputFile, AllelicCountTableColumns.AllelicCountTableVerbosity.INTERMEDIATE);
+        tumorHetPulldown.write(tumorHetOutputFile, AllelicCountTableColumn.AllelicCountTableVerbosity.INTERMEDIATE);
     }
 
     @Override

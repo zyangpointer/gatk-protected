@@ -333,7 +333,7 @@ public class NormalizeSomaticReadCountsIntegrationTest extends CommandLineProgra
 
         try (final TableReader<double[]> reader = TableUtils.reader(betaHatsOutput,
                 (columns, formatExceptionFactory) -> {
-                    TableUtils.checkMandatoryColumns(columns, input.columnNames(), formatExceptionFactory);
+                    TableUtils.checkMandatoryColumns(columns, new TableColumnCollection(input.columnNames()), formatExceptionFactory);
                     if (!columns.matches(0, NormalizeSomaticReadCounts.PON_SAMPLE_BETA_HAT_COLUMN_NAME) ||
                             columns.columnCount() != input.columnNames().size() + 1) {
                         Assert.fail("Beta-hats has bad header");
