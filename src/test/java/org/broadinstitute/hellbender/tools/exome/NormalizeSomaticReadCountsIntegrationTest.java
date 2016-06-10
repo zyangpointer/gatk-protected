@@ -14,6 +14,7 @@ import org.broadinstitute.hellbender.utils.hdf5.HDF5File;
 import org.broadinstitute.hellbender.utils.hdf5.HDF5LibraryUnitTest;
 import org.broadinstitute.hellbender.utils.hdf5.HDF5PoN;
 import org.broadinstitute.hellbender.utils.hdf5.PoN;
+import org.broadinstitute.hellbender.utils.tsv.TableColumnCollection;
 import org.broadinstitute.hellbender.utils.tsv.TableReader;
 import org.broadinstitute.hellbender.utils.tsv.TableUtils;
 import org.testng.Assert;
@@ -327,7 +328,7 @@ public class NormalizeSomaticReadCountsIntegrationTest extends CommandLineProgra
         assertTangentNormalized(tangentNormalized, preTangentNormalized, betaHats, TEST_PON);
     }
 
-    private RealMatrix readBetaHats(File betaHatsOutput, ReadCountCollection input) throws IOException {
+    private RealMatrix readBetaHats(final File betaHatsOutput, final ReadCountCollection input) throws IOException {
         final double[][] betaHats;
 
         try (final TableReader<double[]> reader = TableUtils.reader(betaHatsOutput,

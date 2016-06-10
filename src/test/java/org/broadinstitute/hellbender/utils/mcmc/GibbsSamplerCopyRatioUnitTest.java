@@ -290,9 +290,9 @@ public final class GibbsSamplerCopyRatioUnitTest extends BaseTest {
         //agree with those found by emcee/analytically to a relative error of 1% and 10%, respectively.
         final double[] varianceSamples =
                 Doubles.toArray(gibbsSampler.getSamples(CopyRatioParameter.VARIANCE, Double.class, NUM_BURN_IN));
-        final double variancePosteriorMean = new Mean().evaluate(varianceSamples);
+        final double variancePosteriorCenter = new Mean().evaluate(varianceSamples);
         final double variancePosteriorStandardDeviation = new StandardDeviation().evaluate(varianceSamples);
-        Assert.assertEquals(relativeError(variancePosteriorMean, VARIANCE_TRUTH), 0., 0.01);
+        Assert.assertEquals(relativeError(variancePosteriorCenter, VARIANCE_TRUTH), 0., 0.01);
         Assert.assertEquals(
                 relativeError(variancePosteriorStandardDeviation, VARIANCE_POSTERIOR_STANDARD_DEVIATION_TRUTH),
                 0., 0.1);
@@ -311,11 +311,11 @@ public final class GibbsSamplerCopyRatioUnitTest extends BaseTest {
             final int j = segment;
             final double[] meanInSegmentSamples =
                     Doubles.toArray(meansSamples.stream().map(s -> s.get(j)).collect(Collectors.toList()));
-            final double meanPosteriorMean = new Mean().evaluate(meanInSegmentSamples);
+            final double meanPosteriorCenter = new Mean().evaluate(meanInSegmentSamples);
             final double meanPosteriorStandardDeviation =
                     new StandardDeviation().evaluate(meanInSegmentSamples);
             meanPosteriorStandardDeviations.add(meanPosteriorStandardDeviation);
-            final double absoluteDifferenceFromTruth = Math.abs(meanPosteriorMean - meansTruth.get(segment));
+            final double absoluteDifferenceFromTruth = Math.abs(meanPosteriorCenter - meansTruth.get(segment));
             if (absoluteDifferenceFromTruth > meanPosteriorStandardDeviation) {
                 numMeansOutsideOneSigma++;
             }
