@@ -77,6 +77,6 @@ RUN java -jar gatk-protected.jar -h
 ENV JAVA_LIBRARY_PATH /usr/lib/jni
 
 WORKDIR /root/gatk-protected/
-RUN echo This docker image is running gatk-protected `git describe --tags`
+RUN echo This docker image is running gatk-protected `git describe --tags` > /root/GATK_PROTECTED_VERSION
 
 WORKDIR /root

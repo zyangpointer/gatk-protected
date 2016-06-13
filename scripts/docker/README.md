@@ -28,3 +28,12 @@ sudo docker run -i -t <image>
 cd hellbender-protected
 ./gradlew test
 ```
+
+#### See the GATK-protected version from the docker prompt
+```
+# Start a docker image
+sudo docker run -i -t <image>
+
+# In the image prompt:
+cat GATK_PROTECTED_VERSION
+```
