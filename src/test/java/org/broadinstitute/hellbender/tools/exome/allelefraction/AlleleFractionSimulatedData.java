@@ -34,7 +34,7 @@ public final class AlleleFractionSimulatedData {
     }
 
     private final AlleleFractionState trueState;
-    private final PhaseIndicators truePhases;
+    private final PhaseIndicators truePhases = new PhaseIndicators(new ArrayList<>());
     private final SegmentedGenome segmentedGenome;
     private final int numSegments;
 
@@ -45,7 +45,6 @@ public final class AlleleFractionSimulatedData {
         final AlleleFractionState.MinorFractions minorFractions = new AlleleFractionState.MinorFractions(numSegments);
         final List<AllelicCount> alleleCounts = new ArrayList<>();
         final List<SimpleInterval> segments = new ArrayList<>();
-        truePhases = new PhaseIndicators(new ArrayList<>());
 
         final PoissonDistribution segmentLengthGenerator = makePoisson(rng, averageHetsPerSegment);
         final PoissonDistribution readDepthGenerator = makePoisson(rng, averageDepth);
