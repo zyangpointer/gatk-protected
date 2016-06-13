@@ -1,4 +1,4 @@
-package org.broadinstitute.hellbender.tools.exome;
+package org.broadinstitute.hellbender.tools.exome.alleliccount;
 
 import htsjdk.samtools.util.Locatable;
 import org.broadinstitute.hellbender.tools.exome.allelefraction.MinorAlleleFractionCache;
@@ -13,11 +13,12 @@ import org.broadinstitute.hellbender.utils.param.ParamUtils;
  * @author Samuel Lee &lt;slee@broadinstitute.org&gt;
  * @author Mehrtash Babadi &lt;mehrtash@broadinstitute.org&gt;
  */
-public final class AllelicCount implements Locatable {
+public class AllelicCount implements Locatable {
 
     /* these are mandatory */
     private final SimpleInterval interval;
-    private final int refReadCount, altReadCount;
+    private final int refReadCount;
+    private final int altReadCount;
 
     /* these are extra metadata and can be null */
     private final Nucleotide refNucleotide, altNucleotide;
@@ -58,6 +59,16 @@ public final class AllelicCount implements Locatable {
                         final Nucleotide refNucleotide, final Nucleotide altNucleotide,
                         final Integer readDepth) {
         this(interval, refReadCount, altReadCount, refNucleotide, altNucleotide, readDepth, null);
+    }
+
+    public AllelicCount(final AllelicCount count) {
+        this.interval = count.getInterval();
+        this.refReadCount = count.getRefReadCount();
+        this.altReadCount = count.getAltReadCount();
+        this.refNucleotide = count.getRefNucleotide();
+        this.altNucleotide = count.getAltNucleotide();
+        this.readDepth = count.getReadDepth();
+        this.hetLogOdds = count.getHetLogOdds();
     }
 
     @Override

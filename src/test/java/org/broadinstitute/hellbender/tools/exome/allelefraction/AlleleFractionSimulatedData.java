@@ -8,12 +8,10 @@ import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.random.RandomGeneratorFactory;
 import org.broadinstitute.hellbender.tools.exome.*;
+import org.broadinstitute.hellbender.tools.exome.alleliccount.AllelicCount;
 import org.broadinstitute.hellbender.utils.SimpleInterval;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 import java.util.stream.IntStream;
 
 /**
@@ -23,8 +21,8 @@ import java.util.stream.IntStream;
  */
 public final class AlleleFractionSimulatedData {
     public static final ReadCountCollection TRIVIAL_TARGETS = new ReadCountCollection(
-            Arrays.asList(new Target("target", new SimpleInterval("chr99", 999999999, 999999999))),
-            Arrays.asList("SAMPLE"),
+            Collections.singletonList(new Target("target", new SimpleInterval("chr99", 999999999, 999999999))),
+            Collections.singletonList("SAMPLE"),
             new Array2DRowRealMatrix(new double[][] {{1}}));
 
     private static final int MIN_HETS_PER_SEGMENT = 3;
@@ -36,6 +34,7 @@ public final class AlleleFractionSimulatedData {
     }
 
     private final AlleleFractionState trueState;
+    private final PhaseIndicators truePhases;
     private final SegmentedGenome segmentedGenome;
     private final int numSegments;
 
@@ -46,6 +45,7 @@ public final class AlleleFractionSimulatedData {
         final AlleleFractionState.MinorFractions minorFractions = new AlleleFractionState.MinorFractions(numSegments);
         final List<AllelicCount> alleleCounts = new ArrayList<>();
         final List<SimpleInterval> segments = new ArrayList<>();
+        truePhases = new PhaseIndicators(new ArrayList<>());
 
         final PoissonDistribution segmentLengthGenerator = makePoisson(rng, averageHetsPerSegment);
         final PoissonDistribution readDepthGenerator = makePoisson(rng, averageDepth);
@@ -69,10 +69,18 @@ public final class AlleleFractionSimulatedData {
                 final double bias = biasGenerator.sample();
 
                 //flip a coin to decide alt minor (alt fraction = minor fraction) or ref minor (alt fraction = 1 - minor fraction)
-                final double altFraction =  rng.nextDouble() < 0.5 ? minorFraction : 1 - minorFraction;
+                final boolean isAltMinor = rng.nextDouble() < 0.5;
+                final double altFraction =  isAltMinor ? minorFraction : 1 - minorFraction;
 
                 //the probability of an alt read is the alt fraction modified by the bias or, in the case of an outlier, random
-                final double pAlt = rng.nextDouble() < outlierProbability ? rng.nextDouble() : altFraction / (altFraction + (1 - altFraction) * bias);
+                final double pAlt;
+                if (rng.nextDouble() < outlierProbability) {
+                    truePhases.add(AlleleFractionPhase.OUTLIER);
+                    pAlt = rng.nextDouble();
+                } else {
+                    truePhases.add(isAltMinor ? AlleleFractionPhase.ALT_MINOR : AlleleFractionPhase.REF_MINOR);
+                    pAlt = altFraction / (altFraction + (1 - altFraction) * bias);
+                }
 
                 final int numReads = readDepthGenerator.sample();
                 final int numAltReads = new BinomialDistribution(rng, numReads, pAlt).sample();
@@ -86,7 +94,16 @@ public final class AlleleFractionSimulatedData {
         trueState = new AlleleFractionState(biasMean, biasVariance, outlierProbability, minorFractions);
     };
 
+
     public AlleleFractionState getTrueState() { return trueState; }
+
+    /**
+     * Returns the ArrayList of phase indicators held internally, which should not be modified by the caller.
+     */
+    public PhaseIndicators getTruePhases() {
+        return truePhases;
+    }
+
     public SegmentedGenome getSegmentedGenome() { return segmentedGenome; }
 
     public AlleleFractionStateError error(final AlleleFractionState state) {
@@ -110,5 +127,16 @@ public final class AlleleFractionSimulatedData {
             this.biasVarianceError = biasVarianceError;
             this.outlierProbabilityError = outlierProbabilityError;
         }
+    }
+
+    public static final class PhaseIndicators extends ArrayList<AlleleFractionPhase> {
+        private static final long serialVersionUID = 60652L;
+        public PhaseIndicators(final List<AlleleFractionPhase> outlierIndicators) {
+            super(new ArrayList<>(outlierIndicators));
+        }
+    }
+
+    public enum AlleleFractionPhase {
+        REF_MINOR, ALT_MINOR, OUTLIER
     }
 }
