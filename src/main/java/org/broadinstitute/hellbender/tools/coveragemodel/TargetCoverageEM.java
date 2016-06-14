@@ -1,7 +1,11 @@
 package org.broadinstitute.hellbender.tools.coveragemodel;
 
 /**
- * Created by mehrtash on 6/14/16.
+ * Implementation of the maximum likelihood estimator of {@link TargetCoverageModel} parameters
+ * via the EM algorithm (see CNV-methods.pdf for technical details).
+ *
+ * @author Mehrtash Babadi &lt;mehrtash@broadinstitute.org&gt;
  */
+
 public class TargetCoverageEM {
 }

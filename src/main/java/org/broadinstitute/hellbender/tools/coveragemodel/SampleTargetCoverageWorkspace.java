@@ -1,9 +1,10 @@
 package org.broadinstitute.hellbender.tools.coveragemodel;
 
 /**
+ * Workspace for target coverage of a sample along with helper methods
  *
  * @author Mehrtash Babadi &lt;mehrtash@broadinstitute.org&gt;
  */
 
-public class SampleTargetCoverageWorkspace {
+public final class SampleTargetCoverageWorkspace {
 }

@@ -1,7 +1,10 @@
 package org.broadinstitute.hellbender.tools.coveragemodel;
 
 /**
- * Created by mehrtash on 6/14/16.
+ * Probablistic target coverage model workspace and methods
+ *
+ * @author Mehrtash Babadi &lt;mehrtash@broadinstitute.org&gt;
  */
-public class TargetCoverageModel {
+
+public final class TargetCoverageModel {
 }

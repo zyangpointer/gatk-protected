@@ -1,7 +1,13 @@
 package org.broadinstitute.hellbender.tools.coveragemodel;
 
+import org.apache.commons.math3.linear.RealLinearOperator;
+
 /**
- * Created by mehrtash on 6/14/16.
+ * Preconditioner {@link RealLinearOperator} for iterative solution of the E step equation
+ * for W in {@link TargetCoverageEM}.
+ *
+ * @author Mehrtash Babadi &lt;mehrtash@broadinstitute.org&gt;
  */
-public class TargetCoveragePreconditioner {
+
+public final class TargetCoveragePreconditioner extends RealLinearOperator {
 }

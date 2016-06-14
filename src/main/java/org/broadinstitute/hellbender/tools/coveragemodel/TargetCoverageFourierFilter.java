@@ -1,10 +1,12 @@
 package org.broadinstitute.hellbender.tools.coveragemodel;
 
+import org.apache.commons.math3.linear.RealLinearOperator;
+
 /**
- * An abstract class for
+ * A real linear Fourier filter on target coverage based on {@link RealLinearOperator}
  *
  * @author Mehrtash Babadi &lt;mehrtash@broadinstitute.org&gt;
  */
 
-public abstract class TargetCoverageFourierFilter {
+public final class TargetCoverageFourierFilter extends RealLinearOperator {
 }
