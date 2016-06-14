@@ -52,7 +52,7 @@ public class AllelicCountWithPhasePosteriorsCollection {
     }
 
     /**
-     * Writes out pulldown data to specified file at different verbosity levels.
+     * Writes to specified file at different verbosity levels.
      * @param verbosity  verbosity level
      * @param outputFile  file to write to (if it exists, it will be overwritten)
      */
