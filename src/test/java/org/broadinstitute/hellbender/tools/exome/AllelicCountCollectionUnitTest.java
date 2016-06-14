@@ -58,7 +58,7 @@ public class AllelicCountCollectionUnitTest extends BaseTest {
     }
 
     @Test
-    public void testReadAndWriteItermediateCollection() throws Exception {
+    public void testReadAndWriteIntermediateCollection() throws Exception {
         final File tempFile = createTempFile("allelic-count-collection-test", "tsv");
         final AllelicCountCollection snps = new AllelicCountCollection(INTERMEDIATE_SNPS_FILE);
         snps.write(tempFile, AllelicCountTableColumn.AllelicCountTableVerbosity.INTERMEDIATE);

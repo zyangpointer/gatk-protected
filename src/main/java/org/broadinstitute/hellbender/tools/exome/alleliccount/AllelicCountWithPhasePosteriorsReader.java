@@ -1,7 +1,6 @@
 package org.broadinstitute.hellbender.tools.exome.alleliccount;
 
 import com.google.common.collect.Sets;
-import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.hellbender.exceptions.UserException;
 import org.broadinstitute.hellbender.utils.tsv.DataLine;
@@ -58,4 +57,7 @@ public class AllelicCountWithPhasePosteriorsReader extends TableReader<AllelicCo
         return new AllelicCountWithPhasePosteriors(count, refMinorProb, altMinorProb, outlierProb);
     }
 
+    public AllelicCountTableColumn.AllelicCountTableVerbosity getVerbosity() {
+        return verbosity;
+    }
 }

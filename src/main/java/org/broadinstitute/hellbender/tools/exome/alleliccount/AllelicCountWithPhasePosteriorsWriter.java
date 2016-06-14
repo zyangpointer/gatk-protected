@@ -1,8 +1,8 @@
 package org.broadinstitute.hellbender.tools.exome.alleliccount;
 
 import org.broadinstitute.hellbender.tools.exome.alleliccount.AllelicCountTableColumn.AllelicCountTableVerbosity;
-import org.broadinstitute.hellbender.utils.Utils;
 import org.broadinstitute.hellbender.utils.tsv.DataLine;
+import org.broadinstitute.hellbender.utils.tsv.TableWriter;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,16 +12,19 @@ import java.io.IOException;
  *
  * @author Samuel Lee &lt;slee@broadinstitute.org&gt;
  */
-public class AllelicCountWithPhasePosteriorsWriter extends AllelicCountWriter {
+public class AllelicCountWithPhasePosteriorsWriter extends TableWriter<AllelicCountWithPhasePosteriors> {
+
+    private final AllelicCountTableVerbosity verbosity;
+
     public AllelicCountWithPhasePosteriorsWriter(final File file, final AllelicCountTableVerbosity verbosity) throws IOException {
-        super(file, verbosity, PhasePosteriorsTableColumn.appendPhasePosteriorColumns(AllelicCountTableColumn.getColumns(verbosity)));
+        super(file, PhasePosteriorsTableColumn.appendPhasePosteriorColumns(AllelicCountTableColumn.getColumns(verbosity)));
+        this.verbosity = verbosity;
     }
 
     @Override
-    protected void composeLine(final AllelicCount record, final DataLine dataLine) {
-        super.composeLine(record, dataLine);
-        Utils.validateArg(record.getClass().equals(AllelicCountWithPhasePosteriors.class), "Record must be of type AllelicCountWithPhasePosteriors.");
-        composeLinePhasePosteriors((AllelicCountWithPhasePosteriors) record, dataLine);
+    protected void composeLine(final AllelicCountWithPhasePosteriors record, final DataLine dataLine) {
+        AllelicCountWriter.composeLine(record, dataLine, verbosity);
+        composeLinePhasePosteriors(record, dataLine);
     }
 
     /**
@@ -31,8 +34,8 @@ public class AllelicCountWithPhasePosteriorsWriter extends AllelicCountWriter {
      * @param dataLine the {@link DataLine} to the composed
      */
     private static void composeLinePhasePosteriors(final AllelicCountWithPhasePosteriors record, final DataLine dataLine) {
-        dataLine.append(formatProb(record.getRefMinorProb()))
-                .append(formatProb(record.getAltMinorProb()))
-                .append(formatProb(record.getOutlierProb()));
+        dataLine.append(AllelicCountWriter.formatProb(record.getRefMinorProb()))
+                .append(AllelicCountWriter.formatProb(record.getAltMinorProb()))
+                .append(AllelicCountWriter.formatProb(record.getOutlierProb()));
     }
 }

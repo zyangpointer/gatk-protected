@@ -55,6 +55,10 @@ public class AllelicCountReader extends TableReader<AllelicCount> {
         return createAllelicCountWithVerbosity(dataLine, verbosity);
     }
 
+    public AllelicCountTableColumn.AllelicCountTableVerbosity getVerbosity() {
+        return verbosity;
+    }
+
     static AllelicCount createAllelicCountWithVerbosity(final DataLine dataLine, final AllelicCountTableColumn.AllelicCountTableVerbosity verbosity) {
         /* mandatory (basic) fields */
         final int position = dataLine.getInt(AllelicCountTableColumn.POSITION);

@@ -31,6 +31,17 @@ public class AllelicCountWriter extends TableWriter<AllelicCount> {
 
     @Override
     protected void composeLine(final AllelicCount record, final DataLine dataLine) {
+        composeLine(record, dataLine, verbosity);
+    }
+
+    /**
+     * Compose the record with given verbosity.
+     *
+     * @param record the {@link AllelicCount} record
+     * @param dataLine the {@link DataLine} to the composed
+     * @param verbosity the desired {@link AllelicCountTableVerbosity} of the record
+     */
+    static void composeLine(final AllelicCount record, final DataLine dataLine, final AllelicCountTableVerbosity verbosity) {
         switch (verbosity) {
             case BASIC:
                 composeLineBasic(record, dataLine);
