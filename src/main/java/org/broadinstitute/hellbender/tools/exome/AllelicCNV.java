@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
                 "circular binary segmentation; the result is combined with the target coverages " +
                 "and called segments found by the GATK CNV tool. Bayesian parameter estimation of models for the " +
                 "copy ratios and minor allele fractions in each segment is performed using Markov chain Monte Carlo.",
-        oneLineSummary = "Detect copy-number events using allelic-count data and GATK CNV output.",
+        oneLineSummary = "Detect copy-number events using allelic-count data and GATK CNV output",
         programGroup = CopyNumberProgramGroup.class
 )
 public class AllelicCNV extends SparkCommandLineProgram {
