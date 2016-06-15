@@ -79,7 +79,7 @@ public class AllelicCount implements Locatable {
         this.refNucleotide = tempNucleotide;
 
         try {
-            tempNucleotide = count.getRefNucleotide();
+            tempNucleotide = count.getAltNucleotide();
         } catch (final IllegalArgumentException e) {
             tempNucleotide = null;
         }
