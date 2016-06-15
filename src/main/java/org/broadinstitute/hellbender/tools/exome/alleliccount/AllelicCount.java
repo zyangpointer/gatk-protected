@@ -7,6 +7,9 @@ import org.broadinstitute.hellbender.utils.SimpleInterval;
 import org.broadinstitute.hellbender.utils.Utils;
 import org.broadinstitute.hellbender.utils.param.ParamUtils;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
 /**
  * Reference and alternate allele counts at a SNP site specified by an interval.
  *
@@ -21,7 +24,8 @@ public class AllelicCount implements Locatable {
     private final int altReadCount;
 
     /* these are extra metadata and can be null */
-    private final Nucleotide refNucleotide, altNucleotide;
+    private final Nucleotide refNucleotide;
+    private final Nucleotide altNucleotide;
     private final Integer readDepth;
     private final Double hetLogOdds;
 
@@ -65,10 +69,37 @@ public class AllelicCount implements Locatable {
         this.interval = count.getInterval();
         this.refReadCount = count.getRefReadCount();
         this.altReadCount = count.getAltReadCount();
-        this.refNucleotide = count.getRefNucleotide();
-        this.altNucleotide = count.getAltNucleotide();
-        this.readDepth = count.getReadDepth();
-        this.hetLogOdds = count.getHetLogOdds();
+
+        Nucleotide tempNucleotide;
+        try {
+            tempNucleotide = count.getRefNucleotide();
+        } catch (final IllegalArgumentException e) {
+            tempNucleotide = null;
+        }
+        this.refNucleotide = tempNucleotide;
+
+        try {
+            tempNucleotide = count.getRefNucleotide();
+        } catch (final IllegalArgumentException e) {
+            tempNucleotide = null;
+        }
+        this.altNucleotide = tempNucleotide;
+
+        Integer tempInteger;
+        try {
+            tempInteger = count.getReadDepth();
+        } catch (final IllegalArgumentException e) {
+            tempInteger = null;
+        }
+        this.readDepth = tempInteger;
+
+        Double tempDouble;
+        try {
+            tempDouble = count.getHetLogOdds();
+        } catch (final IllegalArgumentException e) {
+            tempDouble = null;
+        }
+        this.hetLogOdds = tempDouble;
     }
 
     @Override
