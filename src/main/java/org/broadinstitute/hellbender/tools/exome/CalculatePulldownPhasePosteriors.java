@@ -54,8 +54,8 @@ public class CalculatePulldownPhasePosteriors extends CommandLineProgram {
     @Argument(
             doc = "Input file for GATK ACNV allele-fraction global parameters " +
                     "(with extension " + AllelicCNV.AF_PARAMETER_FILE_SUFFIX + ").",
-            fullName = ExomeStandardArgumentDefinitions.SEGMENT_FILE_LONG_NAME,
-            shortName = ExomeStandardArgumentDefinitions.SEGMENT_FILE_SHORT_NAME,
+            fullName = ExomeStandardArgumentDefinitions.AF_PARAMETER_FILE_LONG_NAME,
+            shortName = ExomeStandardArgumentDefinitions.AF_PARAMETER_FILE_SHORT_NAME,
             optional = false
     )
     protected File parametersFile;
